@@ -22,10 +22,8 @@ export default function PreviewPane({ code, onRenderError, isStreaming }: Previe
 
   useEffect(() => {
     if (!iframeRef.current || !displayCode) return;
-
     const spyScript = `<script>window.onerror=function(m,s,l,c,e){window.parent.postMessage({type:'RENDER_ERROR',message:m,source:s,line:l},'*');return false;};</script>`;
     const enhanced = displayCode.replace(/<head>/i, `<head>${spyScript}`);
-
     try {
       setHasError(false);
       iframeRef.current.srcdoc = enhanced;
@@ -38,7 +36,6 @@ export default function PreviewPane({ code, onRenderError, isStreaming }: Previe
   useEffect(() => {
     const handler = (event: MessageEvent) => {
       if (event.data?.type === 'RENDER_ERROR') {
-        console.error('Sandbox error:', event.data.message);
         setHasError(true);
         onRenderErrorRef.current();
       }
@@ -48,34 +45,34 @@ export default function PreviewPane({ code, onRenderError, isStreaming }: Previe
   }, []);
 
   return (
-    <div className="w-full h-full relative bg-slate-900 rounded-xl overflow-hidden border border-slate-700/50">
+    <div className="w-full h-full relative bg-[var(--color-base)]">
       {isStreaming && (
         <div className="absolute top-0 left-0 right-0 h-0.5 z-10">
-          <div className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 animate-pulse" />
+          <div className="h-full bg-[var(--color-accent)] animate-pulse" />
         </div>
       )}
 
       {hasError && (
-        <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-sm flex flex-col items-center justify-center text-center p-6 z-20">
-          <div className="w-16 h-16 bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center text-2xl mb-4">
+        <div className="absolute inset-0 bg-[var(--color-base)]/95 flex flex-col items-center justify-center text-center p-6 z-20">
+          <div className="w-12 h-12 rounded-full bg-[var(--color-danger-subtle)] flex items-center justify-center text-[var(--color-danger)] text-lg mb-3">
             !
           </div>
-          <h3 className="text-lg font-bold text-white mb-1">AI 刚刚敲错了几个字母...</h3>
-          <p className="text-sm text-slate-400 max-w-xs">
-            代码在执行时发生崩溃。试试点击左侧版本快照一键撤回，或对 AI 说"检查你刚才写的代码，修复它"
+          <h3 className="text-sm font-medium text-[var(--color-text-primary)] mb-1">AI 刚才出错了</h3>
+          <p className="text-[12px] text-[var(--color-text-secondary)] max-w-xs leading-relaxed">
+            代码运行时报错。试试点击顶部"版本历史"回退到上一个版本，或重新描述需求让 AI 再试一次。
           </p>
         </div>
       )}
 
       {!displayCode && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <p className="text-slate-600">预览区域</p>
+          <p className="text-[13px] text-[var(--color-text-muted)]">预览区域</p>
         </div>
       )}
 
       <iframe
         ref={iframeRef}
-        title="VibeCraft Preview"
+        title="Preview"
         className="w-full h-full border-0"
         sandbox="allow-scripts allow-same-origin allow-modals allow-forms allow-popups"
       />

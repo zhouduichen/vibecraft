@@ -24,14 +24,13 @@ export default function ChatPanel({
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [codeChunks]);
 
-  const isValid = input.trim().length >= 5 &&
-    !/^[\s\p{P}]+$/u.test(input);
+  const isValid = input.trim().length >= 5 && !/^[\s\p{P}]+$/u.test(input);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
     setInput(val);
     if (val.trim().length > 0 && val.trim().length < 5) {
-      setValidationMsg('请具体描述你想改动哪里，比如："把标题改成红色"');
+      setValidationMsg('请再具体一点，比如"把标题改成红色"');
     } else if (val.trim().length > 0 && /^[\s\p{P}]+$/u.test(val)) {
       setValidationMsg('请输入有意义的描述');
     } else {
@@ -41,7 +40,6 @@ export default function ChatPanel({
 
   const handleSend = async () => {
     if (!isValid || isLoading) return;
-
     setIsLoading(true);
     setCodeChunks([]);
     onStreamStart();
@@ -76,16 +74,13 @@ export default function ChatPanel({
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split('\n');
         buffer = lines.pop() || '';
-
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             const payload = line.slice(6);
             if (payload === '[DONE]') continue;
-
             try {
               const data = JSON.parse(payload);
               if (data.type === 'chunk') {
@@ -97,9 +92,7 @@ export default function ChatPanel({
                 setCodeChunks(prev => [...prev, `Error: ${data.message}`]);
               }
             } catch (e) {
-              if (!(e instanceof SyntaxError)) {
-                console.error('Unexpected error parsing SSE:', e);
-              }
+              if (!(e instanceof SyntaxError)) console.error('SSE parse error:', e);
             }
           }
         }
@@ -107,41 +100,42 @@ export default function ChatPanel({
     } catch (e: any) {
       setCodeChunks(prev => [...prev, `Network error: ${e?.message || String(e)}`]);
     }
-
     setIsLoading(false);
     onStreamEnd();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-4 py-3 border-b border-slate-700/50">
-        <h2 className="text-sm font-semibold text-slate-300">对话</h2>
+      <div className="px-4 py-3 border-b border-[var(--color-border)]">
+        <h2 className="text-[13px] font-medium text-[var(--color-text-secondary)]">对话</h2>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div className="flex-1 overflow-y-auto p-4 space-y-2.5 scrollbar-thin">
         {codeChunks.length === 0 && !isLoading && (
-          <p className="text-sm text-slate-500 text-center py-8">
-            在下方输入你想对应用做的修改，比如"添加一个搜索框"或"把背景改成深色模式"
-          </p>
+          <div className="text-center py-10">
+            <p className="text-[13px] text-[var(--color-text-muted)] leading-relaxed">
+              告诉我你想怎么改这个应用
+            </p>
+            <p className="text-[12px] text-[var(--color-text-muted)] mt-1 opacity-60">
+              比如"添加一个搜索框"或"把背景改成深色"
+            </p>
+          </div>
         )}
         {codeChunks.map((chunk, i) => (
-          <div key={`${i}-${chunk.slice(0, 8)}`} className="bg-slate-800 rounded-lg p-3">
-            <pre className="text-xs text-slate-300 font-mono whitespace-pre-wrap break-all">{chunk}</pre>
+          <div key={`${i}-${chunk.slice(0, 8)}`} className="bg-[var(--color-base)] rounded-[var(--radius-md)] px-3.5 py-2.5">
+            <pre className="text-[12px] text-[var(--color-text-secondary)] font-mono whitespace-pre-wrap break-all leading-relaxed">{chunk}</pre>
           </div>
         ))}
         {isLoading && (
-          <div className="flex items-center gap-2 text-slate-500 text-sm py-2">
-            <span className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{animationDelay:'0ms'}} />
-            <span className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{animationDelay:'150ms'}} />
-            <span className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{animationDelay:'300ms'}} />
-            <span className="ml-1">AI 正在修改代码...</span>
+          <div className="flex items-center gap-2 text-[var(--color-text-muted)] text-[12px] py-1.5">
+            <span className="w-1.5 h-1.5 bg-[var(--color-accent)] rounded-full animate-bounce" style={{animationDelay:'0ms'}} />
+            <span className="w-1.5 h-1.5 bg-[var(--color-accent)] rounded-full animate-bounce" style={{animationDelay:'120ms'}} />
+            <span className="w-1.5 h-1.5 bg-[var(--color-accent)] rounded-full animate-bounce" style={{animationDelay:'240ms'}} />
+            <span className="ml-1.5">AI 正在修改...</span>
           </div>
         )}
         <div ref={bottomRef} />
@@ -149,9 +143,9 @@ export default function ChatPanel({
 
       <SkillSelector projectId={projectId} templateId={templateId} initialSkills={selectedSkills} />
 
-      <div className="p-3 border-t border-slate-700/50">
+      <div className="p-3 border-t border-[var(--color-border)]">
         {validationMsg && (
-          <p className="text-xs text-amber-400 mb-2">{validationMsg}</p>
+          <p className="text-[12px] text-[var(--color-warning)] mb-2">{validationMsg}</p>
         )}
         <div className="flex gap-2">
           <textarea
@@ -161,12 +155,12 @@ export default function ChatPanel({
             placeholder="描述你想要的功能或改动..."
             rows={2}
             disabled={isLoading}
-            className="flex-1 bg-slate-800 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none border border-slate-700 focus:border-indigo-500 resize-none disabled:opacity-50"
+            className="flex-1 bg-[var(--color-base)] rounded-[var(--radius-md)] px-3.5 py-2.5 text-[13px] text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] border border-[var(--color-border)] focus:border-[var(--color-accent)] outline-none resize-none disabled:opacity-50 transition-ui"
           />
           <button
             onClick={handleSend}
             disabled={!isValid || isLoading}
-            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-xl font-medium text-sm transition self-end disabled:cursor-not-allowed"
+            className="px-4 py-2.5 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] disabled:bg-[var(--color-surface-raised)] disabled:text-[var(--color-text-muted)] text-white rounded-[var(--radius-md)] text-[13px] font-medium transition-ui self-end disabled:cursor-not-allowed"
           >
             {isLoading ? '...' : '发送'}
           </button>

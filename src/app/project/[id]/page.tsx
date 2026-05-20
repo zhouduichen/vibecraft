@@ -19,31 +19,19 @@ export default function ProjectEditor({ params }: { params: Promise<{ id: string
 
   useEffect(() => {
     fetch(`/api/projects/${id}`)
-      .then(r => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json();
-      })
-      .then(data => {
-        if (data.error) { router.push('/'); return; }
-        setProject(data);
-        setCurrentCode(data.current_html);
-      })
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+      .then(data => { if (data.error) { router.push('/'); return; } setProject(data); setCurrentCode(data.current_html); })
       .catch(() => { setFetchError(true); });
   }, [id, router]);
 
-  const handleCodeUpdate = useCallback((code: string) => {
-    setCurrentCode(code);
-  }, []);
-
-  const handleRollback = useCallback((code: string) => {
-    setCurrentCode(code);
-  }, []);
+  const handleCodeUpdate = useCallback((code: string) => { setCurrentCode(code); }, []);
+  const handleRollback = useCallback((code: string) => { setCurrentCode(code); }, []);
 
   if (fetchError) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-3 text-slate-400">
-        <p>加载失败</p>
-        <button onClick={() => router.push('/dashboard')} className="text-indigo-400 hover:text-indigo-300 text-sm">
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3">
+        <p className="text-[14px] text-[var(--color-text-secondary)]">加载失败</p>
+        <button onClick={() => router.push('/dashboard')} className="text-[13px] text-[var(--color-accent)] hover:text-[var(--color-accent-hover)] transition-ui">
           ← 返回项目列表
         </button>
       </div>
@@ -52,34 +40,35 @@ export default function ProjectEditor({ params }: { params: Promise<{ id: string
 
   if (!project) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-[var(--color-border)] border-t-[var(--color-accent)] rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="h-[calc(100vh-3rem)] flex flex-col">
-      <header className="h-12 bg-slate-900 border-b border-slate-700/50 flex items-center justify-between px-4 shrink-0">
-        <div className="flex items-center gap-3">
-          <button onClick={() => router.push('/dashboard')} className="text-slate-400 hover:text-white text-sm">
+    <div className="h-[calc(100vh-2.75rem)] flex flex-col">
+      <header className="h-11 bg-[var(--color-surface)] border-b border-[var(--color-border)] flex items-center justify-between px-4 shrink-0">
+        <div className="flex items-center gap-3 min-w-0">
+          <button onClick={() => router.push('/dashboard')} className="text-[13px] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-ui shrink-0">
             ← 返回
           </button>
-          <span className="text-slate-600">|</span>
-          <h1 className="text-sm font-medium text-white">{project.name}</h1>
+          <span className="w-px h-4 bg-[var(--color-border)]" />
+          <h1 className="text-[13px] font-medium text-[var(--color-text-primary)] truncate">{project.name}</h1>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <BalanceBar />
           <button onClick={() => setShowVersions(v => !v)}
-            className="text-xs px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition">
-            {showVersions ? '隐藏' : '版本历史'}
+            className={"text-[12px] px-2.5 py-1.5 rounded-[var(--radius-sm)] font-medium transition-ui " +
+              (showVersions ? 'bg-[var(--color-accent-subtle)] text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]')}>
+            版本历史
           </button>
           <ExportMenu projectId={id} code={currentCode} />
         </div>
       </header>
 
       <div className="flex-1 flex min-h-0">
-        <div className="w-[35%] min-w-[320px] border-r border-slate-700/50 bg-slate-900 flex flex-col">
+        <div className="w-[320px] lg:w-[360px] border-r border-[var(--color-border)] bg-[var(--color-surface)] flex flex-col shrink-0">
           <ChatPanel
             projectId={id}
             templateId={project.template_id}
@@ -90,7 +79,7 @@ export default function ProjectEditor({ params }: { params: Promise<{ id: string
           />
         </div>
 
-        <div className="flex-1 flex">
+        <div className="flex-1 flex min-w-0">
           <div className="flex-1">
             <PreviewPane
               code={currentCode}
@@ -99,7 +88,7 @@ export default function ProjectEditor({ params }: { params: Promise<{ id: string
             />
           </div>
           {showVersions && (
-            <div className="w-72 border-l border-slate-700/50 bg-slate-900 overflow-y-auto">
+            <div className="w-64 border-l border-[var(--color-border)] bg-[var(--color-surface)] overflow-y-auto shrink-0 scrollbar-thin">
               <VersionTimeline projectId={id} onRollback={handleRollback} />
             </div>
           )}

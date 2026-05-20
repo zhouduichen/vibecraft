@@ -24,7 +24,7 @@ export default function SkillSelector({ projectId, templateId, initialSkills = [
         body: JSON.stringify({ selected_skills: next }),
       }).catch(err => {
         console.error('Failed to update skills:', err);
-        setSelected(prev); // revert on failure
+        setSelected(prev);
       });
       return next;
     });
@@ -33,17 +33,17 @@ export default function SkillSelector({ projectId, templateId, initialSkills = [
   if (availableSkills.length === 0) return null;
 
   return (
-    <div className="px-4 py-2 border-t border-slate-700/50">
-      <p className="text-xs text-slate-500 mb-2">附加技能（可选）</p>
-      <div className="flex flex-wrap gap-2">
+    <div className="px-4 py-2.5 border-t border-[var(--color-border)]">
+      <p className="text-[11px] text-[var(--color-text-muted)] mb-2">附加技能（可选）</p>
+      <div className="flex flex-wrap gap-1.5">
         {availableSkills.map(skill => (
           <button
             key={skill.id}
             onClick={() => toggle(skill.id)}
-            className={"text-xs px-3 py-1.5 rounded-full font-medium transition " +
+            className={"text-[11px] px-2.5 py-1 rounded-full font-medium transition-ui " +
               (selected.includes(skill.id)
-                ? 'bg-indigo-600 text-white'
-                : 'bg-slate-800 text-slate-400 hover:bg-slate-700')}
+                ? 'bg-[var(--color-accent)] text-white'
+                : 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]')}
           >
             {skill.name}
           </button>

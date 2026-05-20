@@ -3,25 +3,27 @@ import Providers from '@/components/Providers';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'VibeCraft',
-  description: 'Create your own apps with natural language',
+  title: 'VibeCraft — Create apps with words',
+  description: 'Pick a template, describe what you want, and get a working app.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="zh-CN" className="h-full">
-      <body className="bg-slate-950 text-slate-100 antialiased min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col">
         <Providers>
-          <nav className="h-12 bg-slate-900 border-b border-slate-700/50 flex items-center px-4 gap-4 shrink-0">
-            <a href="/" className="text-sm font-bold text-indigo-400 hover:text-indigo-300 transition">
+          <nav className="h-11 flex items-center px-5 gap-5 shrink-0 border-b border-[var(--color-border)]">
+            <a href="/" className="text-sm font-semibold tracking-tight text-[var(--color-text-primary)] hover:text-white transition-ui">
               VibeCraft
             </a>
-            <a href="/dashboard" className="text-sm text-slate-400 hover:text-white transition">
-              项目
-            </a>
-            <a href="/" className="text-sm text-slate-400 hover:text-white transition">
-              模板
-            </a>
+            <div className="flex gap-1">
+              <a href="/" className="px-3 py-1.5 rounded-[var(--radius-sm)] text-[13px] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)] transition-ui">
+                模板
+              </a>
+              <a href="/dashboard" className="px-3 py-1.5 rounded-[var(--radius-sm)] text-[13px] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)] transition-ui">
+                项目
+              </a>
+            </div>
           </nav>
           {children}
         </Providers>

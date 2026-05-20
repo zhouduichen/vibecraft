@@ -15,6 +15,7 @@ interface VersionTimelineProps {
 export default function VersionTimeline({ projectId, onRollback }: VersionTimelineProps) {
   const [versions, setVersions] = useState<VersionEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [rollingBack, setRollingBack] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(`/api/versions/${projectId}`)
@@ -24,6 +25,7 @@ export default function VersionTimeline({ projectId, onRollback }: VersionTimeli
   }, [projectId]);
 
   const handleRollback = async (versionId: string) => {
+    setRollingBack(versionId);
     const res = await fetch(`/api/versions/${projectId}/rollback`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -31,32 +33,42 @@ export default function VersionTimeline({ projectId, onRollback }: VersionTimeli
     });
     const data = await res.json();
     if (data.html_content) onRollback(data.html_content);
+    setRollingBack(null);
   };
 
   if (loading) {
-    return <div className="p-4 text-sm text-slate-500">加载中...</div>;
+    return (
+      <div className="p-4 flex items-center justify-center">
+        <div className="w-4 h-4 border-2 border-[var(--color-border)] border-t-[var(--color-accent)] rounded-full animate-spin" />
+      </div>
+    );
   }
 
   return (
     <div className="p-4">
-      <h3 className="text-sm font-semibold text-slate-300 mb-3">版本历史</h3>
+      <h3 className="text-[13px] font-medium text-[var(--color-text-secondary)] mb-3">版本历史</h3>
       {versions.length === 0 ? (
-        <p className="text-xs text-slate-500">暂无版本记录</p>
+        <p className="text-[12px] text-[var(--color-text-muted)]">暂无版本记录</p>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           {versions.map((v, i) => (
-            <div key={v.id} className="bg-slate-800 rounded-lg p-3">
-              <p className="text-xs text-slate-400 mb-1">
-                {new Date(v.created_at).toLocaleString('zh-CN')}
-              </p>
-              <p className="text-xs text-slate-300 mb-2 line-clamp-2">{v.message}</p>
-              {i > 0 && (
-                <button onClick={() => handleRollback(v.id)}
-                  className="text-xs text-indigo-400 hover:text-indigo-300 transition">
-                  回退到此版本
-                </button>
-              )}
-              {i === 0 && <span className="text-xs text-slate-600">当前版本</span>}
+            <div key={v.id} className="rounded-[var(--radius-md)] bg-[var(--color-base)] px-3 py-2.5">
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <span className="text-[11px] text-[var(--color-text-muted)]">
+                  {new Date(v.created_at).toLocaleString('zh-CN', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' })}
+                </span>
+                {i === 0 ? (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--color-accent-subtle)] text-[var(--color-accent)] font-medium">当前</span>
+                ) : (
+                  <button
+                    onClick={() => handleRollback(v.id)}
+                    disabled={rollingBack === v.id}
+                    className="text-[11px] text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-ui disabled:opacity-50">
+                    {rollingBack === v.id ? '...' : '回退'}
+                  </button>
+                )}
+              </div>
+              <p className="text-[12px] text-[var(--color-text-secondary)] truncate">{v.message}</p>
             </div>
           ))}
         </div>

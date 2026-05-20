@@ -11,14 +11,14 @@ export default function BalanceBar() {
 
   return (
     <div className="flex items-center gap-2">
-      <div className="w-20 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+      <div className="w-16 h-1 rounded-full bg-[var(--color-border)] overflow-hidden">
         <div
-          className={"h-full rounded-full transition-all duration-500 " + (isLow ? 'bg-rose-500' : 'bg-emerald-500')}
+          className={"h-full rounded-full transition-all duration-500 " + (isLow ? 'bg-[var(--color-danger)]' : 'bg-[var(--color-accent)]')}
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className={"text-xs " + (isLow ? 'text-rose-400' : 'text-slate-400')}>
-        {isLow ? '燃料不足' : `算力 ${Math.round(pct)}%`}
+      <span className={"text-[12px] font-medium " + (isLow ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]')}>
+        {isLow ? '余额不足' : `算力 ${Math.round(pct)}%`}
       </span>
     </div>
   );
