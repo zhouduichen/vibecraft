@@ -54,14 +54,22 @@ export default function ChatPanel({
       });
 
       if (!res.ok) {
-        const err = await res.json();
+        const err = await res.json().catch(() => ({ error: 'Request failed' }));
         setCodeChunks([`Error: ${err.error || 'Request failed'}`]);
         setIsLoading(false);
         onStreamEnd();
         return;
       }
 
-      const reader = res.body!.getReader();
+      const body = res.body;
+      if (!body) {
+        setCodeChunks(['Error: No response body']);
+        setIsLoading(false);
+        onStreamEnd();
+        return;
+      }
+
+      const reader = body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
 
@@ -75,8 +83,11 @@ export default function ChatPanel({
 
         for (const line of lines) {
           if (line.startsWith('data: ')) {
+            const payload = line.slice(6);
+            if (payload === '[DONE]') continue;
+
             try {
-              const data = JSON.parse(line.slice(6));
+              const data = JSON.parse(payload);
               if (data.type === 'chunk') {
                 setCodeChunks(prev => [...prev, data.content]);
               } else if (data.type === 'code') {
@@ -85,12 +96,16 @@ export default function ChatPanel({
               } else if (data.type === 'error') {
                 setCodeChunks(prev => [...prev, `Error: ${data.message}`]);
               }
-            } catch { /* partial JSON */ }
+            } catch (e) {
+              if (!(e instanceof SyntaxError)) {
+                console.error('Unexpected error parsing SSE:', e);
+              }
+            }
           }
         }
       }
-    } catch (e) {
-      setCodeChunks(prev => [...prev, `Network error: ${String(e)}`]);
+    } catch (e: any) {
+      setCodeChunks(prev => [...prev, `Network error: ${e?.message || String(e)}`]);
     }
 
     setIsLoading(false);
@@ -117,7 +132,7 @@ export default function ChatPanel({
           </p>
         )}
         {codeChunks.map((chunk, i) => (
-          <div key={i} className="bg-slate-800 rounded-lg p-3">
+          <div key={`${i}-${chunk.slice(0, 8)}`} className="bg-slate-800 rounded-lg p-3">
             <pre className="text-xs text-slate-300 font-mono whitespace-pre-wrap break-all">{chunk}</pre>
           </div>
         ))}
@@ -132,7 +147,7 @@ export default function ChatPanel({
         <div ref={bottomRef} />
       </div>
 
-      <SkillSelector projectId={projectId} templateId={templateId} />
+      <SkillSelector projectId={projectId} templateId={templateId} initialSkills={selectedSkills} />
 
       <div className="p-3 border-t border-slate-700/50">
         {validationMsg && (

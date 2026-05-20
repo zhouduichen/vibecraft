@@ -6,37 +6,49 @@ import ChatPanel from '@/components/ChatPanel';
 import VersionTimeline from '@/components/VersionTimeline';
 import ExportMenu from '@/components/ExportMenu';
 import BalanceBar from '@/components/BalanceBar';
+import type { Project } from '@/lib/db';
 
 export default function ProjectEditor({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const [project, setProject] = useState<any>(null);
+  const [project, setProject] = useState<Project | null>(null);
   const [currentCode, setCurrentCode] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [showVersions, setShowVersions] = useState(false);
-  const [errorCount, setErrorCount] = useState(0);
+  const [fetchError, setFetchError] = useState(false);
 
   useEffect(() => {
     fetch(`/api/projects/${id}`)
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then(data => {
         if (data.error) { router.push('/'); return; }
         setProject(data);
         setCurrentCode(data.current_html);
-      });
+      })
+      .catch(() => { setFetchError(true); });
   }, [id, router]);
 
   const handleCodeUpdate = useCallback((code: string) => {
     setCurrentCode(code);
   }, []);
 
-  const handleRenderError = useCallback(() => {
-    setErrorCount(c => c + 1);
-  }, []);
-
   const handleRollback = useCallback((code: string) => {
     setCurrentCode(code);
   }, []);
+
+  if (fetchError) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 text-slate-400">
+        <p>加载失败</p>
+        <button onClick={() => router.push('/dashboard')} className="text-indigo-400 hover:text-indigo-300 text-sm">
+          ← 返回项目列表
+        </button>
+      </div>
+    );
+  }
 
   if (!project) {
     return (
@@ -48,7 +60,6 @@ export default function ProjectEditor({ params }: { params: Promise<{ id: string
 
   return (
     <div className="h-[calc(100vh-3rem)] flex flex-col">
-      {/* Top bar */}
       <header className="h-12 bg-slate-900 border-b border-slate-700/50 flex items-center justify-between px-4 shrink-0">
         <div className="flex items-center gap-3">
           <button onClick={() => router.push('/dashboard')} className="text-slate-400 hover:text-white text-sm">
@@ -67,10 +78,8 @@ export default function ProjectEditor({ params }: { params: Promise<{ id: string
         </div>
       </header>
 
-      {/* Main content */}
       <div className="flex-1 flex min-h-0">
-        {/* Left: Chat panel */}
-        <div className="w-[35%] min-w-[360px] border-r border-slate-700/50 bg-slate-900 flex flex-col">
+        <div className="w-[35%] min-w-[320px] border-r border-slate-700/50 bg-slate-900 flex flex-col">
           <ChatPanel
             projectId={id}
             templateId={project.template_id}
@@ -81,12 +90,11 @@ export default function ProjectEditor({ params }: { params: Promise<{ id: string
           />
         </div>
 
-        {/* Right: Preview + optional version timeline */}
         <div className="flex-1 flex">
           <div className="flex-1">
             <PreviewPane
               code={currentCode}
-              onRenderError={handleRenderError}
+              onRenderError={() => {}}
               isStreaming={isStreaming}
             />
           </div>

@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface PreviewPaneProps {
   code: string;
@@ -11,6 +11,8 @@ export default function PreviewPane({ code, onRenderError, isStreaming }: Previe
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [hasError, setHasError] = useState(false);
   const [lastStableCode, setLastStableCode] = useState(code);
+  const onRenderErrorRef = useRef(onRenderError);
+  onRenderErrorRef.current = onRenderError;
 
   useEffect(() => {
     if (!isStreaming) setLastStableCode(code);
@@ -21,41 +23,38 @@ export default function PreviewPane({ code, onRenderError, isStreaming }: Previe
   useEffect(() => {
     if (!iframeRef.current || !displayCode) return;
 
-    const spyScript = `<script>window.onerror=function(m,s,l,c,e){window.parent.postMessage({type:'RENDER_ERROR',message:m,source:s,line:l},'*');return!1;};</script>`;
-    const enhanced = displayCode.replace('<head>', `<head>${spyScript}`);
+    const spyScript = `<script>window.onerror=function(m,s,l,c,e){window.parent.postMessage({type:'RENDER_ERROR',message:m,source:s,line:l},'*');return false;};</script>`;
+    const enhanced = displayCode.replace(/<head>/i, `<head>${spyScript}`);
 
     try {
       setHasError(false);
       iframeRef.current.srcdoc = enhanced;
     } catch {
-      // srcdoc assignment itself failed
       setHasError(true);
-      onRenderError();
+      onRenderErrorRef.current();
     }
-  }, [displayCode, onRenderError]);
+  }, [displayCode]);
 
   useEffect(() => {
     const handler = (event: MessageEvent) => {
       if (event.data?.type === 'RENDER_ERROR') {
         console.error('Sandbox error:', event.data.message);
         setHasError(true);
-        onRenderError();
+        onRenderErrorRef.current();
       }
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
-  }, [onRenderError]);
+  }, []);
 
   return (
     <div className="w-full h-full relative bg-slate-900 rounded-xl overflow-hidden border border-slate-700/50">
-      {/* Streaming progress bar */}
       {isStreaming && (
         <div className="absolute top-0 left-0 right-0 h-0.5 z-10">
           <div className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 animate-pulse" />
         </div>
       )}
 
-      {/* Error overlay */}
       {hasError && (
         <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-sm flex flex-col items-center justify-center text-center p-6 z-20">
           <div className="w-16 h-16 bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center text-2xl mb-4">

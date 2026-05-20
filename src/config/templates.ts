@@ -1,5 +1,3 @@
-import type { Skill } from './skills';
-
 export interface Template {
   id: string;
   name: string;

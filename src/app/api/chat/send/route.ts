@@ -14,21 +14,9 @@ export async function POST(req: NextRequest) {
   }
   const userId = session.user.id;
 
-  // 2. Check credits
-  const { data: user } = await db
-    .from('users')
-    .select('credits')
-    .eq('id', userId)
-    .single();
-
-  if (!user || user.credits <= 0) {
-    return NextResponse.json({ error: '您的算力余额不足，请联系管理员充值' }, { status: 402 });
-  }
-
-  // 3. Parse request
+  // 2. Parse request
   const { projectId, userDemand, selectedSkills } = await req.json();
   if (!projectId || !userDemand || userDemand.trim().length < 5) {
-    return NextResponse.json({ error: '请求内容过短，请描述具体需求' }, { status: 400 });
   }
 
   // 4. Get project
@@ -80,12 +68,15 @@ export async function POST(req: NextRequest) {
   }
 
   if (!aiResponse.ok) {
-    const errText = await aiResponse.text();
-    return NextResponse.json({ error: `AI 服务返回错误: ${errText.slice(0, 200)}` }, { status: 502 });
+    return NextResponse.json({ error: 'AI 服务暂时不可用，请稍后重试' }, { status: 502 });
   }
 
   // 7. Stream response
-  const reader = aiResponse.body!.getReader();
+  const body = aiResponse.body;
+  if (!body) {
+    return NextResponse.json({ error: 'AI 服务响应异常' }, { status: 502 });
+  }
+  const reader = body.getReader();
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({
@@ -131,13 +122,16 @@ export async function POST(req: NextRequest) {
                     }
                   }
                 }
-              } catch {
-                // Skip malformed JSON
+              } catch (e) {
+                if (!(e instanceof SyntaxError)) {
+                  console.error('Unexpected error parsing SSE data:', e);
+                }
               }
             }
           }
         }
       } catch (e) {
+        console.error('Stream read error:', e);
         controller.enqueue(
           encoder.encode(`data: ${JSON.stringify({ type: 'error', message: '流式传输中断' })}\n\n`)
         );
@@ -145,26 +139,34 @@ export async function POST(req: NextRequest) {
 
       // 8. Extract final code and persist
       const codeMatch = fullResponse.match(/```html\s*([\s\S]*?)(```|$)/);
-      const cleanCode = codeMatch?.[1]?.trim() || fullResponse;
+      const cleanCode = codeMatch?.[1]?.trim();
 
-      try {
-        await db.rpc('chat_send_transaction', {
-          p_user_id: userId,
-          p_project_id: projectId,
-          p_new_html: cleanCode,
-          p_message: userDemand.trim(),
-          p_credits_cost: CREDITS_PER_REQUEST,
-        });
-      } catch (e) {
+      if (cleanCode) {
+        try {
+          await db.rpc('chat_send_transaction', {
+            p_user_id: userId,
+            p_project_id: projectId,
+            p_new_html: cleanCode,
+            p_message: userDemand.trim(),
+            p_credits_cost: CREDITS_PER_REQUEST,
+          });
+        } catch (e: any) {
+          const msg = e?.message?.includes('Insufficient credits')
+            ? '您的算力余额不足，无法完成此次修改'
+            : '保存失败，但代码仍然有效';
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({ type: 'error', message: msg })}\n\n`)
+          );
+        }
         controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify({ type: 'error', message: '保存失败，但代码仍然有效' })}\n\n`)
+          encoder.encode(`data: ${JSON.stringify({ type: 'code', content: cleanCode })}\n\n`)
+        );
+      } else {
+        controller.enqueue(
+          encoder.encode(`data: ${JSON.stringify({ type: 'error', message: 'AI 未返回有效代码，请重试' })}\n\n`)
         );
       }
 
-      // Send final code
-      controller.enqueue(
-        encoder.encode(`data: ${JSON.stringify({ type: 'code', content: cleanCode })}\n\n`)
-      );
       controller.close();
     },
   });

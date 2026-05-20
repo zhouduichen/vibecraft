@@ -22,22 +22,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: '项目不存在' }, { status: 404 });
   }
 
-  const slug = randomBytes(4).toString('hex');
-
-  const { error } = await db
-    .from('published_apps')
-    .insert({
-      project_id: projectId,
-      slug,
-      html_content: project.current_html,
-    });
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  // Retry on slug collision
+  let slug: string;
+  let error: any;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    slug = randomBytes(8).toString('hex');
+    const result = await db
+      .from('published_apps')
+      .insert({
+        project_id: projectId,
+        slug,
+        html_content: project.current_html,
+      });
+    error = result.error;
+    if (!error) {
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
+      const url = baseUrl ? `${baseUrl}/app/${slug}` : `${req.nextUrl.origin}/app/${slug}`;
+      return NextResponse.json({ url, slug });
+    }
+    // If not a unique violation, fail immediately
+    if (error.code !== '23505') break;
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-  const url = `${baseUrl}/app/${slug}`;
-
-  return NextResponse.json({ url, slug });
+  return NextResponse.json({ error: error?.message || '发布失败' }, { status: 500 });
 }

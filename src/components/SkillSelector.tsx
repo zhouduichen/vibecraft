@@ -5,10 +5,11 @@ import { useState } from 'react';
 interface SkillSelectorProps {
   projectId: string;
   templateId: string;
+  initialSkills?: string[];
 }
 
-export default function SkillSelector({ projectId, templateId }: SkillSelectorProps) {
-  const [selected, setSelected] = useState<string[]>([]);
+export default function SkillSelector({ projectId, templateId, initialSkills = [] }: SkillSelectorProps) {
+  const [selected, setSelected] = useState<string[]>(initialSkills);
 
   const availableSkills = Object.values(SKILLS).filter(
     s => s.compatibleTemplates.includes(templateId) || s.compatibleTemplates.includes('*')
@@ -21,7 +22,10 @@ export default function SkillSelector({ projectId, templateId }: SkillSelectorPr
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ selected_skills: next }),
-      }).catch(console.error);
+      }).catch(err => {
+        console.error('Failed to update skills:', err);
+        setSelected(prev); // revert on failure
+      });
       return next;
     });
   };

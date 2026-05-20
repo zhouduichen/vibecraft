@@ -1,24 +1,41 @@
-import NextAuth from 'next-auth';
+import NextAuth, { DefaultSession } from 'next-auth';
 import GitHub from 'next-auth/providers/github';
 import { db } from './db';
+
+declare module 'next-auth' {
+  interface Session {
+    credits: number;
+    user: { id: string } & DefaultSession['user'];
+  }
+}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     GitHub({
-      clientId: process.env.AUTH_GITHUB_ID || 'placeholder',
-      clientSecret: process.env.AUTH_GITHUB_SECRET || 'placeholder',
+      clientId: process.env.AUTH_GITHUB_ID || '',
+      clientSecret: process.env.AUTH_GITHUB_SECRET || '',
     }),
   ],
   callbacks: {
     async signIn({ user }) {
       if (!user.email) return false;
-      const { data: existing } = await db
+      const { data: existing, error } = await db
         .from('users')
         .select('id')
         .eq('email', user.email)
         .single();
+      if (error) {
+        console.error('Failed to lookup user:', error);
+        return false;
+      }
       if (!existing) {
-        await db.from('users').insert({ email: user.email, credits: 1000 });
+        const { error: insertError } = await db
+          .from('users')
+          .insert({ email: user.email, credits: 1000 });
+        if (insertError) {
+          console.error('Failed to create user:', insertError);
+          return false;
+        }
       }
       return true;
     },
@@ -30,8 +47,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           .eq('email', session.user.email)
           .single();
         if (dbUser) {
-          (session.user as any).id = dbUser.id;
-          (session as any).credits = dbUser.credits;
+          session.user.id = dbUser.id;
+          session.credits = dbUser.credits;
         }
       }
       return session;

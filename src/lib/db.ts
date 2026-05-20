@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Use fallback values during build (env vars not available at build time)
+// Build-compatible: env vars may not be set during `next build`. Use
+// placeholder values at module init time to prevent build crashes.
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-key';
 

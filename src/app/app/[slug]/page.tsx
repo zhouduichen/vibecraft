@@ -11,5 +11,12 @@ export default async function PublishedApp({ params }: { params: Promise<{ slug:
 
   if (!data) notFound();
 
-  return <div dangerouslySetInnerHTML={{ __html: data.html_content }} />;
+  return (
+    <iframe
+      srcDoc={data.html_content}
+      title="VibeCraft App"
+      sandbox="allow-scripts allow-forms allow-popups"
+      style={{ width: '100vw', height: '100vh', border: 'none', display: 'block' }}
+    />
+  );
 }

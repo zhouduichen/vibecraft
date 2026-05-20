@@ -5,7 +5,7 @@ const MAX_CREDITS = 1000;
 
 export default function BalanceBar() {
   const { data: session } = useSession();
-  const credits = (session as any)?.credits ?? MAX_CREDITS;
+  const credits = session?.credits ?? MAX_CREDITS;
   const pct = Math.min(100, (credits / MAX_CREDITS) * 100);
   const isLow = pct < 10;
 
