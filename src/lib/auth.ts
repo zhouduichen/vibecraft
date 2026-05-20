@@ -25,7 +25,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         .from('users')
         .select('id')
         .eq('email', user.email)
-        .single();
+        .maybeSingle();
       if (error) {
         console.error('Failed to lookup user:', error);
         return false;
@@ -47,7 +47,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           .from('users')
           .select('*')
           .eq('email', session.user.email)
-          .single();
+          .maybeSingle();
         if (dbUser) {
           session.user.id = dbUser.id;
           session.credits = dbUser.credits;
