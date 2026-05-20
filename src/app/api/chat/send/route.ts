@@ -148,7 +148,7 @@ export async function POST(req: NextRequest) {
             p_project_id: projectId,
             p_new_html: cleanCode,
             p_message: userDemand.trim(),
-            p_credits_cost: CREDITS_PER_REQUEST,
+            p_cost: CREDITS_PER_REQUEST,
           });
         } catch (e: any) {
           const msg = e?.message?.includes('Insufficient credits')

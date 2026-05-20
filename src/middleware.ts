@@ -3,13 +3,13 @@ import { NextResponse } from 'next/server';
 
 export default auth((req) => {
   const isAuth = !!req.auth?.user;
-  const isAuthPage = req.nextUrl.pathname.startsWith('/auth');
+  const isAuthPage = req.nextUrl.pathname.startsWith('/auth') || req.nextUrl.pathname === '/login';
   const isApiRoute = req.nextUrl.pathname.startsWith('/api/');
 
   if (isApiRoute) return NextResponse.next();
 
   if (!isAuth && !isAuthPage) {
-    return NextResponse.redirect(new URL('/auth/signin', req.url));
+    return NextResponse.redirect(new URL('/login', req.url));
   }
 
   return NextResponse.next();
