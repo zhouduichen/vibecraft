@@ -59,7 +59,8 @@ export default function ProjectEditor({ params }: { params: Promise<{ id: string
         <div className="flex items-center gap-2">
           <BalanceBar />
           <button onClick={() => setShowVersions(v => !v)}
-            className={"text-[12px] px-2.5 py-1.5 rounded-[var(--radius-sm)] font-medium transition-ui " +
+            aria-pressed={showVersions}
+            className={"text-[12px] px-2.5 py-1.5 rounded-[var(--radius-sm)] font-medium transition-ui focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] focus-visible:outline-offset-2 " +
               (showVersions ? 'bg-[var(--color-accent-subtle)] text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]')}>
             版本历史
           </button>

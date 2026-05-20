@@ -22,6 +22,15 @@ export default function ExportMenu({ projectId, code }: ExportMenuProps) {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [open]);
+
   const handleZip = async () => {
     setLoading('zip');
     const res = await fetch('/api/export/zip', {
@@ -60,36 +69,39 @@ export default function ExportMenu({ projectId, code }: ExportMenuProps) {
     <div ref={menuRef} className="relative">
       <button
         onClick={() => setOpen(v => !v)}
-        className="text-[12px] px-3 py-1.5 rounded-[var(--radius-sm)] bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-medium transition-ui"
+        aria-expanded={open}
+        aria-haspopup="true"
+        className="text-[12px] px-3 py-1.5 rounded-[var(--radius-sm)] bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-medium transition-ui focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] focus-visible:outline-offset-2"
       >
         导出
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-72 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-xl)] shadow-xl z-50 p-4">
+        <div className="absolute right-0 top-full mt-2 w-72 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-xl)] shadow-xl z-50 p-4" role="menu">
           <h3 className="text-[13px] font-semibold text-[var(--color-text-primary)] mb-3">导出应用</h3>
 
-          <button onClick={handleZip} disabled={loading === 'zip'}
-            className="w-full text-left p-3 rounded-[var(--radius-md)] bg-[var(--color-surface-raised)] hover:bg-[var(--color-border)] transition-ui mb-2 disabled:opacity-50">
+          <button onClick={handleZip} disabled={loading === 'zip'} role="menuitem"
+            className="w-full text-left p-3 rounded-[var(--radius-md)] bg-[var(--color-surface-raised)] hover:bg-[var(--color-border)] transition-ui mb-2 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] focus-visible:outline-offset-2">
             <p className="text-[13px] font-medium text-[var(--color-text-primary)]">下载 ZIP 文件</p>
             <p className="text-[12px] text-[var(--color-text-muted)] mt-0.5">下载后在任何浏览器打开即可使用</p>
           </button>
 
-          <button onClick={handlePublish} disabled={loading === 'publish'}
-            className="w-full text-left p-3 rounded-[var(--radius-md)] bg-[var(--color-surface-raised)] hover:bg-[var(--color-border)] transition-ui mb-3 disabled:opacity-50">
+          <button onClick={handlePublish} disabled={loading === 'publish'} role="menuitem"
+            className="w-full text-left p-3 rounded-[var(--radius-md)] bg-[var(--color-surface-raised)] hover:bg-[var(--color-border)] transition-ui mb-3 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] focus-visible:outline-offset-2">
             <p className="text-[13px] font-medium text-[var(--color-text-primary)]">生成分享链接</p>
             <p className="text-[12px] text-[var(--color-text-muted)] mt-0.5">获取链接和二维码，手机扫码即可打开</p>
           </button>
 
           {qrUrl && publishUrl && (
             <div className="text-center p-3 bg-[var(--color-base)] rounded-[var(--radius-lg)]">
-              <img src={qrUrl} alt="QR Code" className="w-32 h-32 mx-auto mb-3 rounded-lg" />
+              <img src={qrUrl} alt="分享二维码" className="w-32 h-32 mx-auto mb-3 rounded-lg" />
               <p className="text-[12px] text-[var(--color-text-muted)] mb-2">扫码或复制链接分享</p>
               <div className="flex gap-1.5">
-                <input readOnly value={publishUrl}
-                  className="flex-1 text-[11px] bg-[var(--color-surface)] text-[var(--color-text-secondary)] px-2.5 py-1.5 rounded-[var(--radius-sm)] outline-none"
+                <label htmlFor="publish-url-input" className="sr-only">分享链接</label>
+                <input id="publish-url-input" readOnly value={publishUrl}
+                  className="flex-1 text-[11px] bg-[var(--color-surface)] text-[var(--color-text-secondary)] px-2.5 py-1.5 rounded-[var(--radius-sm)] outline-none focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] focus-visible:outline-offset-2"
                   onFocus={e => e.target.select()} />
                 <button onClick={copyUrl}
-                  className="text-[11px] px-2.5 py-1.5 rounded-[var(--radius-sm)] bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-medium transition-ui shrink-0">
+                  className="text-[11px] px-2.5 py-1.5 rounded-[var(--radius-sm)] bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-medium transition-ui shrink-0 focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] focus-visible:outline-offset-2">
                   {copied ? '已复制' : '复制'}
                 </button>
               </div>

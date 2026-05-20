@@ -8,7 +8,7 @@
   --color-border-hover: #2f3454;
   --color-text-primary: #e8e9f0;
   --color-text-secondary: #9498b0;
-  --color-text-muted: #5f6478;
+  --color-text-muted: #787d94;
   --color-accent: #6c72f0;
   --color-accent-hover: #8187f5;
   --color-accent-subtle: rgba(108, 114, 240, 0.12);
@@ -57,6 +57,14 @@
   .focus-ring {
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    body::before { display: none; }
+    .transition-ui { transition: none; }
+    .animate-bounce { animation: none; }
+    .animate-pulse { animation: none; }
+    .animate-spin { animation: none; }
   }
 
   /* Scrollbar styling */

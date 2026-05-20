@@ -38,7 +38,7 @@ export default function VersionTimeline({ projectId, onRollback }: VersionTimeli
 
   if (loading) {
     return (
-      <div className="p-4 flex items-center justify-center">
+      <div className="p-4 flex items-center justify-center" role="status" aria-label="加载版本历史">
         <div className="w-4 h-4 border-2 border-[var(--color-border)] border-t-[var(--color-accent)] rounded-full animate-spin" />
       </div>
     );
@@ -46,13 +46,13 @@ export default function VersionTimeline({ projectId, onRollback }: VersionTimeli
 
   return (
     <div className="p-4">
-      <h3 className="text-[13px] font-medium text-[var(--color-text-secondary)] mb-3">版本历史</h3>
+      <h2 className="text-[13px] font-medium text-[var(--color-text-secondary)] mb-3">版本历史</h2>
       {versions.length === 0 ? (
         <p className="text-[12px] text-[var(--color-text-muted)]">暂无版本记录</p>
       ) : (
-        <div className="space-y-1.5">
+        <div className="space-y-1.5" role="list" aria-label="版本列表">
           {versions.map((v, i) => (
-            <div key={v.id} className="rounded-[var(--radius-md)] bg-[var(--color-base)] px-3 py-2.5">
+            <div key={v.id} role="listitem" className="rounded-[var(--radius-md)] bg-[var(--color-base)] px-3 py-2.5">
               <div className="flex items-center justify-between gap-2 mb-1">
                 <span className="text-[11px] text-[var(--color-text-muted)]">
                   {new Date(v.created_at).toLocaleString('zh-CN', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' })}
@@ -63,7 +63,8 @@ export default function VersionTimeline({ projectId, onRollback }: VersionTimeli
                   <button
                     onClick={() => handleRollback(v.id)}
                     disabled={rollingBack === v.id}
-                    className="text-[11px] text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-ui disabled:opacity-50">
+                    aria-label={`回退到 ${new Date(v.created_at).toLocaleString('zh-CN')} 的版本`}
+                    className="text-[11px] text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-ui disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] focus-visible:outline-offset-2">
                     {rollingBack === v.id ? '...' : '回退'}
                   </button>
                 )}
