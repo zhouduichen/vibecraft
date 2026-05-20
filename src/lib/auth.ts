@@ -5,8 +5,8 @@ import { db } from './db';
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     GitHub({
-      clientId: process.env.AUTH_GITHUB_ID!,
-      clientSecret: process.env.AUTH_GITHUB_SECRET!,
+      clientId: process.env.AUTH_GITHUB_ID || 'placeholder',
+      clientSecret: process.env.AUTH_GITHUB_SECRET || 'placeholder',
     }),
   ],
   callbacks: {
