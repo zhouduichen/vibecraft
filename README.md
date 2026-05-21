@@ -1,36 +1,66 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# VibeCraft
 
-## Getting Started
+用自然语言创造自己的小应用。选模板，用对话改造，实时预览，一键导出。
 
-First, run the development server:
+## 快速开始
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+打开 [http://localhost:3000](http://localhost:3000)。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 功能
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 模板市场
+从记账本、Todo、打卡手账等模板出发，一键创建项目。
 
-## Learn More
+### AI 对话改造
+用自然语言描述需求——"加个饼图"、"背景换成深色"——AI 实时改写完整代码，在右侧 iframe 中即时预览。
 
-To learn more about Next.js, take a look at the following resources:
+### 设计增强
+可选的设计品质开关。开启后进入多轮 Teach 对话，确定你的审美偏好（安静克制 / 温暖亲切 / 鲜明醒目），之后所有 AI 生成自动注入设计规范：配色、排版、间距、动效、无障碍。随时可关闭或重新设定。
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 技能扩展
+为项目叠加功能技能——图表可视化、Excel 导出、超支提醒等，技能随项目模板智能兼容。
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 版本历史
+每次 AI 修改自动生成版本快照，随时回退到之前任何版本。
 
-## Deploy on Vercel
+### 导出
+- **ZIP 下载** — 单文件 HTML，任何浏览器打开即用
+- **分享链接 + 二维码** — 手机扫码即可打开，支持 PWA 添加到主屏幕
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 技术栈
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Next.js 14 (App Router)
+- TypeScript
+- Tailwind CSS
+- NextAuth (GitHub OAuth)
+- Supabase (PostgreSQL)
+- DeepSeek API (AI 对话)
+
+## 环境变量
+
+复制 `.env.local.example` 为 `.env.local`，填入：
+
+| 变量 | 说明 |
+|------|------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase 项目 URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service_role 密钥 |
+| `AUTH_SECRET` | NextAuth 加密密钥 |
+| `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` | GitHub OAuth 应用凭证 |
+| `AI_API_BASE_URL` | AI API 地址（兼容 OpenAI 协议） |
+| `AI_API_KEY` | AI API 密钥 |
+| `AI_MODEL` | 模型名称 |
+
+## 数据库
+
+在 Supabase SQL Editor 中执行以下迁移：
+
+```sql
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS design_profile JSONB DEFAULT NULL;
+```
+
+完整的 schema 见 `docs/supabase-schema.sql`。
