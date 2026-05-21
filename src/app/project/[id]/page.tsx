@@ -21,7 +21,7 @@ export default function ProjectEditor({ params }: { params: Promise<{ id: string
   useEffect(() => {
     fetch(`/api/projects/${id}`)
       .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
-      .then(data => { if (data.error) { router.push('/'); return; } setProject(data); setCurrentCode(data.current_html); })
+      .then(data => { if (data.error) { router.push('/'); return; } setProject(data); setCurrentCode(data.current_html); setDesignProfile(data.design_profile || null); })
       .catch(() => { setFetchError(true); });
   }, [id, router]);
 
@@ -109,6 +109,8 @@ export default function ProjectEditor({ params }: { params: Promise<{ id: string
             projectId={id}
             templateId={project.template_id}
             selectedSkills={project.selected_skills || []}
+            designProfile={designProfile}
+            onDesignProfileChange={setDesignProfile}
             onCodeUpdate={handleCodeUpdate}
             onStreamStart={() => setIsStreaming(true)}
             onStreamEnd={() => setIsStreaming(false)}
