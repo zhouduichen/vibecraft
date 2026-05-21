@@ -17,12 +17,13 @@ export async function POST(req: NextRequest) {
   // 2. Parse request
   const { projectId, userDemand, selectedSkills } = await req.json();
   if (!projectId || !userDemand || userDemand.trim().length < 5) {
+    return NextResponse.json({ error: '请求内容过短，请描述具体需求' }, { status: 400 });
   }
 
   // 4. Get project
   const { data: project } = await db
     .from('projects')
-    .select('current_html')
+    .select('current_html, design_profile')
     .eq('id', projectId)
     .eq('user_id', userId)
     .single();
@@ -32,7 +33,8 @@ export async function POST(req: NextRequest) {
   }
 
   // 5. Build prompts
-  const systemPrompt = buildSystemPrompt();
+  const designProfile = project.design_profile || null;
+  const systemPrompt = buildSystemPrompt(designProfile);
   const userPrompt = buildUserPrompt(
     project.current_html,
     userDemand.trim(),
@@ -68,7 +70,12 @@ export async function POST(req: NextRequest) {
   }
 
   if (!aiResponse.ok) {
-    return NextResponse.json({ error: 'AI 服务暂时不可用，请稍后重试' }, { status: 502 });
+    let msg = 'AI 服务暂时不可用，请稍后重试';
+    try {
+      const errData = await aiResponse.json();
+      if (errData?.message) msg = errData.message;
+    } catch { /* ignore parse failure */ }
+    return NextResponse.json({ error: msg }, { status: 502 });
   }
 
   // 7. Stream response
@@ -85,6 +92,13 @@ export async function POST(req: NextRequest) {
       let fullResponse = '';
       let buffer = '';
       let codeSent = false;
+      let firstChunk = true;
+
+      const sendStep = (step: string, detail = '') => {
+        controller.enqueue(
+          encoder.encode(`data: ${JSON.stringify({ type: 'step', step, detail })}\n\n`)
+        );
+      };
 
       try {
         while (true) {
@@ -107,15 +121,18 @@ export async function POST(req: NextRequest) {
                 const content = parsed.choices?.[0]?.delta?.content || '';
                 if (content) {
                   fullResponse += content;
-                  controller.enqueue(
-                    encoder.encode(`data: ${JSON.stringify({ type: 'chunk', content })}\n\n`)
-                  );
 
-                  // Partial code update for preview
+                  if (firstChunk) {
+                    firstChunk = false;
+                    sendStep('writing', 'AI 正在根据你的需求编写代码...');
+                  }
+
+                  // Partial code update for preview (mid-stream)
                   if (fullResponse.includes('```html') && !codeSent && fullResponse.length > 5000) {
                     const match = fullResponse.match(/```html\s*([\s\S]*?)(```|$)/);
                     if (match?.[1] && match[1].length > 1000) {
                       codeSent = true;
+                      sendStep('applying', '代码初稿生成完毕，正在更新预览...');
                       controller.enqueue(
                         encoder.encode(`data: ${JSON.stringify({ type: 'code', content: match[1].trim() })}\n\n`)
                       );
@@ -142,13 +159,14 @@ export async function POST(req: NextRequest) {
       const cleanCode = codeMatch?.[1]?.trim();
 
       if (cleanCode) {
+        sendStep('saving', '正在保存修改...');
         try {
           await db.rpc('chat_send_transaction', {
             p_user_id: userId,
             p_project_id: projectId,
             p_new_html: cleanCode,
             p_message: userDemand.trim(),
-            p_cost: CREDITS_PER_REQUEST,
+            p_credits_cost: CREDITS_PER_REQUEST,
           });
         } catch (e: any) {
           const msg = e?.message?.includes('Insufficient credits')
@@ -158,6 +176,7 @@ export async function POST(req: NextRequest) {
             encoder.encode(`data: ${JSON.stringify({ type: 'error', message: msg })}\n\n`)
           );
         }
+        sendStep('done', '修改完成，请在右侧预览查看效果');
         controller.enqueue(
           encoder.encode(`data: ${JSON.stringify({ type: 'code', content: cleanCode })}\n\n`)
         );
