@@ -21,6 +21,7 @@ export interface Project {
   name: string;
   current_html: string;
   selected_skills: string[];
+  design_profile: DesignProfile | null;
   created_at: string;
   updated_at: string;
 }
@@ -31,4 +32,19 @@ export interface Version {
   html_content: string;
   message: string;
   created_at: string;
+}
+
+export interface DesignProfile {
+  scene: 'personal' | 'shared';
+  theme: 'dark' | 'light';
+  colorStrategy: 'restrained' | 'committed' | 'full-palette';
+  accentColor: string;
+  accentRatio: number;
+  borderRadius: number;
+  shadowStyle: 'none' | 'soft';
+  motion: 'none' | 'subtle' | 'playful';
+  fontFamily: string;
+  bodyFontSize: number;
+  lineHeight: number;
+  density: 'sparse' | 'moderate';
 }
