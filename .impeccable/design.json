@@ -1,0 +1,284 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-21T00:00:00.000Z",
+  "title": "Design System: VibeCraft",
+  "extensions": {
+    "colorMeta": {
+      "warm-slate-base": {
+        "role": "neutral",
+        "displayName": "Warm Slate Base",
+        "canonical": "oklch(8% 0.005 265)",
+        "tonalRamp": [
+          "oklch(8% 0.005 265)",
+          "oklch(12% 0.005 265)",
+          "oklch(18% 0.005 265)",
+          "oklch(26% 0.005 265)",
+          "oklch(38% 0.005 265)",
+          "oklch(52% 0.005 265)",
+          "oklch(72% 0.005 265)",
+          "oklch(92% 0.005 265)"
+        ]
+      },
+      "warm-slate-surface": {
+        "role": "neutral",
+        "displayName": "Warm Slate Surface",
+        "canonical": "oklch(12% 0.005 265)",
+        "tonalRamp": [
+          "oklch(8% 0.005 265)",
+          "oklch(12% 0.005 265)",
+          "oklch(18% 0.005 265)",
+          "oklch(26% 0.005 265)",
+          "oklch(38% 0.005 265)",
+          "oklch(52% 0.005 265)",
+          "oklch(72% 0.005 265)",
+          "oklch(92% 0.005 265)"
+        ]
+      },
+      "warm-slate-raised": {
+        "role": "neutral",
+        "displayName": "Warm Slate Raised",
+        "canonical": "oklch(16% 0.005 265)",
+        "tonalRamp": [
+          "oklch(8% 0.005 265)",
+          "oklch(12% 0.005 265)",
+          "oklch(18% 0.005 265)",
+          "oklch(26% 0.005 265)",
+          "oklch(38% 0.005 265)",
+          "oklch(52% 0.005 265)",
+          "oklch(72% 0.005 265)",
+          "oklch(92% 0.005 265)"
+        ]
+      },
+      "pencil-blue": {
+        "role": "primary",
+        "displayName": "Pencil Blue",
+        "canonical": "oklch(58% 0.21 275)",
+        "tonalRamp": [
+          "oklch(18% 0.06 275)",
+          "oklch(28% 0.10 275)",
+          "oklch(38% 0.14 275)",
+          "oklch(48% 0.18 275)",
+          "oklch(58% 0.21 275)",
+          "oklch(68% 0.18 275)",
+          "oklch(78% 0.14 275)",
+          "oklch(88% 0.08 275)"
+        ]
+      },
+      "ink-primary": {
+        "role": "neutral",
+        "displayName": "Ink Primary",
+        "canonical": "oklch(93% 0.003 265)",
+        "tonalRamp": [
+          "oklch(30% 0.003 265)",
+          "oklch(44% 0.003 265)",
+          "oklch(58% 0.003 265)",
+          "oklch(70% 0.003 265)",
+          "oklch(80% 0.003 265)",
+          "oklch(88% 0.003 265)",
+          "oklch(93% 0.003 265)",
+          "oklch(97% 0.003 265)"
+        ]
+      },
+      "ink-secondary": {
+        "role": "neutral",
+        "displayName": "Ink Secondary",
+        "canonical": "oklch(68% 0.005 265)",
+        "tonalRamp": [
+          "oklch(30% 0.005 265)",
+          "oklch(44% 0.005 265)",
+          "oklch(56% 0.005 265)",
+          "oklch(68% 0.005 265)",
+          "oklch(76% 0.005 265)",
+          "oklch(84% 0.005 265)",
+          "oklch(92% 0.005 265)",
+          "oklch(97% 0.005 265)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "body": {
+        "displayName": "Body",
+        "purpose": "正文、描述、列表内容、对话消息。全站默认字号。"
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "按钮文案、导航链接、分类标签、表单标签。略紧字间距。"
+      }
+    },
+    "shadows": [
+      {
+        "name": "pencil-glow",
+        "value": "0 0 20px rgba(108, 114, 240, 0.08)",
+        "purpose": "仅在 hover/focus 时对铅笔蓝相关交互元素使用。扩散光晕，像铅笔蓝在纸下微微透光。不用于卡片或静态状态。"
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-ui",
+        "value": "cubic-bezier(0.25, 0.1, 0.25, 1)",
+        "purpose": "默认 UI 过渡：background-color、border-color、opacity 变化 180ms。"
+      },
+      {
+        "name": "ease-enter",
+        "value": "cubic-bezier(0.33, 0, 0.1, 1)",
+        "purpose": "元素入场动画：fadeIn（opacity + translateY(6px) → 0），持续 400ms。"
+      }
+    ],
+    "breakpoints": [
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "主操作按钮。铅笔蓝底白字，圆角 12px，仅用于每屏最重要的那个操作。",
+      "html": "<button class=\"ds-btn-primary\">新建项目</button>",
+      "css": ".ds-btn-primary {\n  background: #6c72f0;\n  color: #ffffff;\n  padding: 8px 16px;\n  border: none;\n  border-radius: 12px;\n  font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", system-ui, sans-serif;\n  font-size: 13px;\n  font-weight: 500;\n  letter-spacing: -0.01em;\n  cursor: pointer;\n  transition: background-color 180ms cubic-bezier(0.25, 0.1, 0.25, 1);\n}\n.ds-btn-primary:hover {\n  background: #8187f5;\n}\n.ds-btn-primary:focus-visible {\n  outline: 2px solid #6c72f0;\n  outline-offset: 2px;\n}\n.ds-btn-primary:active {\n  background: #5a60e0;\n}\n.ds-btn-primary:disabled {\n  background: #1a1d2b;\n  color: #787d94;\n  cursor: not-allowed;\n}"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "次要操作。无背景，hover 时显出石板浮层底色。用于不抢主按钮注意力的场景。",
+      "html": "<button class=\"ds-btn-ghost\">返回</button>",
+      "css": ".ds-btn-ghost {\n  background: transparent;\n  color: #9498b0;\n  padding: 6px 12px;\n  border: none;\n  border-radius: 8px;\n  font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", system-ui, sans-serif;\n  font-size: 13px;\n  font-weight: 500;\n  letter-spacing: -0.01em;\n  cursor: pointer;\n  transition: background-color 180ms cubic-bezier(0.25, 0.1, 0.25, 1), color 180ms cubic-bezier(0.25, 0.1, 0.25, 1);\n}\n.ds-btn-ghost:hover {\n  background: #1a1d2b;\n  color: #e8e9f0;\n}\n.ds-btn-ghost:focus-visible {\n  outline: 2px solid #6c72f0;\n  outline-offset: 2px;\n}"
+    },
+    {
+      "name": "Category Pill",
+      "kind": "chip",
+      "refersTo": "chip-category",
+      "description": "分类筛选标签。选中态铅笔蓝实底，未选中态透明。",
+      "html": "<button class=\"ds-chip-category ds-chip-category--selected\">全部</button>",
+      "css": ".ds-chip-category {\n  background: transparent;\n  color: #9498b0;\n  padding: 6px 16px;\n  border: none;\n  border-radius: 8px;\n  font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", system-ui, sans-serif;\n  font-size: 13px;\n  font-weight: 500;\n  cursor: pointer;\n  transition: background-color 180ms cubic-bezier(0.25, 0.1, 0.25, 1), color 180ms cubic-bezier(0.25, 0.1, 0.25, 1);\n}\n.ds-chip-category:hover {\n  background: #1a1d2b;\n  color: #e8e9f0;\n}\n.ds-chip-category:focus-visible {\n  outline: 2px solid #6c72f0;\n  outline-offset: 2px;\n}\n.ds-chip-category--selected {\n  background: #6c72f0;\n  color: #ffffff;\n}\n.ds-chip-category--selected:hover {\n  background: #8187f5;\n  color: #ffffff;\n}"
+    },
+    {
+      "name": "Surface Card",
+      "kind": "card",
+      "refersTo": "card-surface",
+      "description": "主要容器。石板面底色 + 纸纹边框，hover 时边框加深并出现铅笔光晕。",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-body\">卡片内容</div></div>",
+      "css": ".ds-card {\n  background: #13151f;\n  border: 1px solid #232738;\n  border-radius: 16px;\n  overflow: hidden;\n  cursor: pointer;\n  transition: border-color 180ms cubic-bezier(0.25, 0.1, 0.25, 1), box-shadow 180ms cubic-bezier(0.25, 0.1, 0.25, 1);\n}\n.ds-card:hover {\n  border-color: #2f3454;\n  box-shadow: 0 0 20px rgba(108, 114, 240, 0.08);\n}\n.ds-card-body {\n  padding: 14px 16px;\n}"
+    },
+    {
+      "name": "Search Input",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "搜索框。石板底 + 纸纹边框，focus 时边框变铅笔蓝。左侧内嵌搜索图标。",
+      "html": "<div class=\"ds-input-wrap\"><svg class=\"ds-input-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z\"/></svg><input class=\"ds-input\" type=\"text\" placeholder=\"搜索模板...\" /></div>",
+      "css": ".ds-input-wrap {\n  position: relative;\n  display: flex;\n  align-items: center;\n}\n.ds-input-icon {\n  position: absolute;\n  left: 14px;\n  width: 16px;\n  height: 16px;\n  color: #787d94;\n  pointer-events: none;\n}\n.ds-input {\n  width: 100%;\n  background: #0a0b10;\n  color: #e8e9f0;\n  padding: 10px 14px 10px 38px;\n  border: 1px solid #232738;\n  border-radius: 12px;\n  font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", system-ui, sans-serif;\n  font-size: 14px;\n  outline: none;\n  transition: border-color 180ms cubic-bezier(0.25, 0.1, 0.25, 1);\n}\n.ds-input::placeholder {\n  color: #787d94;\n  font-size: 13px;\n}\n.ds-input:focus {\n  border-color: #6c72f0;\n  outline: 2px solid #6c72f0;\n  outline-offset: 2px;\n}\n.ds-input:disabled {\n  opacity: 0.5;\n  cursor: not-allowed;\n}"
+    },
+    {
+      "name": "Chat Textarea",
+      "kind": "input",
+      "refersTo": "input-chat",
+      "description": "对话输入框。resize-none，2 行高度，与发送按钮并排。",
+      "html": "<textarea class=\"ds-chat-input\" rows=\"2\" placeholder=\"描述你想要的功能或改动...\"></textarea>",
+      "css": ".ds-chat-input {\n  flex: 1;\n  background: #0a0b10;\n  color: #e8e9f0;\n  padding: 10px 14px;\n  border: 1px solid #232738;\n  border-radius: 12px;\n  font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", system-ui, sans-serif;\n  font-size: 13px;\n  line-height: 1.5;\n  outline: none;\n  resize: none;\n  transition: border-color 180ms cubic-bezier(0.25, 0.1, 0.25, 1);\n}\n.ds-chat-input::placeholder {\n  color: #787d94;\n}\n.ds-chat-input:focus {\n  border-color: #6c72f0;\n  outline: 2px solid #6c72f0;\n  outline-offset: 2px;\n}\n.ds-chat-input:disabled {\n  opacity: 0.5;\n  cursor: not-allowed;\n}"
+    },
+    {
+      "name": "Top Navigation",
+      "kind": "nav",
+      "refersTo": "nav-top",
+      "description": "顶部导航条。44px 高，石板面底 + 底边分割线。Logo 在左，链接在右。",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-logo\" href=\"#\">VibeCraft</a><div class=\"ds-nav-links\"><a class=\"ds-nav-link\" href=\"#\">模板</a><a class=\"ds-nav-link\" href=\"#\">项目</a></div></nav>",
+      "css": ".ds-nav {\n  height: 44px;\n  display: flex;\n  align-items: center;\n  padding: 0 20px;\n  gap: 20px;\n  background: #13151f;\n  border-bottom: 1px solid #232738;\n  flex-shrink: 0;\n}\n.ds-nav-logo {\n  font-size: 14px;\n  font-weight: 600;\n  letter-spacing: -0.02em;\n  color: #e8e9f0;\n  text-decoration: none;\n  transition: color 180ms cubic-bezier(0.25, 0.1, 0.25, 1);\n}\n.ds-nav-logo:hover {\n  color: #ffffff;\n}\n.ds-nav-links {\n  display: flex;\n  gap: 4px;\n}\n.ds-nav-link {\n  padding: 6px 12px;\n  border-radius: 8px;\n  font-size: 13px;\n  font-weight: 500;\n  letter-spacing: -0.01em;\n  color: #9498b0;\n  text-decoration: none;\n  transition: background-color 180ms cubic-bezier(0.25, 0.1, 0.25, 1), color 180ms cubic-bezier(0.25, 0.1, 0.25, 1);\n}\n.ds-nav-link:hover {\n  background: #1a1d2b;\n  color: #e8e9f0;\n}\n.ds-nav-link:focus-visible,\n.ds-nav-logo:focus-visible {\n  outline: 2px solid #6c72f0;\n  outline-offset: 2px;\n  border-radius: 2px;\n}"
+    },
+    {
+      "name": "Empty State",
+      "kind": "custom",
+      "refersTo": "empty-state",
+      "description": "空状态占位。居中布局，铅笔蓝淡层圆形容器 + emoji 图标 + 引导文案 + 主按钮。",
+      "html": "<div class=\"ds-empty\"><div class=\"ds-empty-icon\">✨</div><h2 class=\"ds-empty-title\">创建你的第一个应用</h2><p class=\"ds-empty-desc\">选一个模板作为起点，然后告诉 AI 你想怎么改。不需要写一行代码。</p><button class=\"ds-btn-primary\">浏览模板<svg class=\"ds-empty-arrow\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M5 12h14M12 5l7 7-7 7\"/></svg></button></div>",
+      "css": ".ds-empty {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  text-align: center;\n  max-width: 360px;\n  margin: 0 auto;\n  min-height: 50vh;\n}\n.ds-empty-icon {\n  width: 64px;\n  height: 64px;\n  border-radius: 16px;\n  background: rgba(108, 114, 240, 0.12);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 24px;\n  margin-bottom: 20px;\n}\n.ds-empty-title {\n  font-size: 18px;\n  font-weight: 600;\n  color: #e8e9f0;\n  margin-bottom: 8px;\n}\n.ds-empty-desc {\n  font-size: 14px;\n  color: #9498b0;\n  line-height: 1.6;\n  margin-bottom: 24px;\n}\n.ds-empty-arrow {\n  width: 16px;\n  height: 16px;\n  margin-left: 4px;\n}"
+    },
+    {
+      "name": "Project List Item",
+      "kind": "custom",
+      "refersTo": "list-item-project",
+      "description": "项目列表行。石板面卡片 + emoji 图标 + 项目名 + 日期 + 箭头。hover 时整行可点击。",
+      "html": "<div class=\"ds-proj-item\" tabindex=\"0\" role=\"listitem\"><div class=\"ds-proj-icon\">💰</div><div class=\"ds-proj-info\"><span class=\"ds-proj-name\">记账本</span><span class=\"ds-proj-date\">更新于 2026/05/21</span></div><span class=\"ds-proj-arrow\">→</span></div>",
+      "css": ".ds-proj-item {\n  display: flex;\n  align-items: center;\n  gap: 16px;\n  padding: 14px 16px;\n  background: #13151f;\n  border: 1px solid #232738;\n  border-radius: 16px;\n  cursor: pointer;\n  transition: border-color 180ms cubic-bezier(0.25, 0.1, 0.25, 1), box-shadow 180ms cubic-bezier(0.25, 0.1, 0.25, 1);\n}\n.ds-proj-item:hover {\n  border-color: #2f3454;\n  box-shadow: 0 0 20px rgba(108, 114, 240, 0.08);\n}\n.ds-proj-item:focus-visible {\n  outline: 2px solid #6c72f0;\n  outline-offset: 2px;\n}\n.ds-proj-icon {\n  width: 36px;\n  height: 36px;\n  border-radius: 12px;\n  background: #0a0b10;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 18px;\n  flex-shrink: 0;\n}\n.ds-proj-info {\n  flex: 1;\n  min-width: 0;\n  display: flex;\n  flex-direction: column;\n  gap: 2px;\n}\n.ds-proj-name {\n  font-size: 14px;\n  font-weight: 500;\n  color: #e8e9f0;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.ds-proj-date {\n  font-size: 12px;\n  color: #787d94;\n}\n.ds-proj-arrow {\n  font-size: 14px;\n  color: #787d94;\n  transition: color 180ms ease-out, transform 200ms ease-out;\n  flex-shrink: 0;\n}\n.ds-proj-item:hover .ds-proj-arrow {\n  color: #6c72f0;\n  transform: translateX(2px);\n}"
+    },
+    {
+      "name": "Loading Spinner",
+      "kind": "custom",
+      "refersTo": "loading-spinner",
+      "description": "加载旋转器。圆环 + 铅笔蓝顶部弧线旋转动画。",
+      "html": "<div class=\"ds-spinner\"></div>",
+      "css": ".ds-spinner {\n  width: 24px;\n  height: 24px;\n  border: 2px solid #232738;\n  border-top-color: #6c72f0;\n  border-radius: 50%;\n  animation: ds-spin 0.8s linear infinite;\n}\n@keyframes ds-spin {\n  to { transform: rotate(360deg); }\n}\n@media (prefers-reduced-motion: reduce) {\n  .ds-spinner { animation: none; }\n}"
+    }
+  ],
+  "narrative": {
+    "northStar": "手工纸品",
+    "overview": "像一本精心排印的独立杂志：深色纸张上的铅笔画痕，克制的留白，指尖能感受到的纹理。这不是一个冷冰冰的工具界面，而是一个让人想坐下来慢慢翻的手作空间。底色是夜里台灯照在石板灰纸上的色调，不纯黑，带一点点暖意。铅笔蓝是唯一的强调色，像在用 6H 铅笔在纸上轻轻画出标记，克制但精准。意外感来自翻页时的小细节：一个微妙的扩散光晕、一行恰到好处的留白、一个让人会心一笑的动效。质感通过减法获得。没有多余的分割线、没有大面积的卡片嵌套、没有喧哗的渐变。纸纹纹理铺满整个表面（3% 透明度 noise 层），不仔细看看不到，但少了它就感觉不对。这排斥 SaaS 模板的塑料感、AI 套壳的廉价紫粉渐变、以及技术工具的冷酷单色。它是温暖的、有人味的，像一个懂你的创意伙伴坐在旁边。",
+    "keyCharacteristics": [
+      "深色纸底 + 石板暖灰基调：暗但不冷",
+      "铅笔蓝单色强调，使用克制约占任一界面 ≤10%",
+      "纯色分层表达深度，关键状态才加扩散光晕",
+      "系统原生无衬线字体，靠字重和大小建立层级",
+      "拒绝卡片嵌套、侧边条纹、渐变文字、玻璃效果"
+    ],
+    "rules": [
+      {
+        "name": "The 10% Rule",
+        "body": "铅笔蓝出现在任何界面的面积不超过 10%。如果一张屏幕上同时有三个以上的蓝色元素，说明强调色用滥了。",
+        "section": "colors"
+      },
+      {
+        "name": "The Ink Rule",
+        "body": "文字颜色只用三种墨色。不新造灰色，不用纯白。primary / secondary / muted 三级足够覆盖所有信息层级。",
+        "section": "colors"
+      },
+      {
+        "name": "The Single Stack Rule",
+        "body": "全站只用一套无衬线字体栈。不混用 serif、不加载 web font。字体不是 VibeCraft 做个性声明的地方；空间、颜色、动效才是。",
+        "section": "typography"
+      },
+      {
+        "name": "The Scale Gap Rule",
+        "body": "相邻层级字号比 ≥ 1.25。不做"差不多大"的字号阶梯。",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat-By-Default Rule",
+        "body": "所有表面在静止状态下都是平的。纸已经够好了，不需要假三维。阴影只在状态变化时作为温柔的反馈出现，不是作为结构的指示。",
+        "section": "elevation"
+      },
+      {
+        "name": "The Glow-Is-Rare Rule",
+        "body": "扩散光晕只用在 pencil-glow 规定的场景。禁止在卡片、导航、非交互表面使用任何形式的 shadow。",
+        "section": "elevation"
+      },
+      {
+        "name": "The Card-Surface Rule",
+        "body": "任何容器要么是石板面 + 边框（卡片），要么是石板底（嵌入区），不允许第三个样式。不要发明新的容器颜色组合。",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "用留白和字号对比代替分割线和边框。三行内容之间的空隙比一条 border 更好。",
+      "铅笔蓝仅用于可交互元素和焦点环。永远不用于纯装饰。",
+      "保持按钮文案简短（2-4 个中文字）。"发送"、"新建项目"、"浏览模板"。",
+      "用三层墨色（primary / secondary / muted）覆盖所有文字层级。不新造灰色。",
+      "圆角在同一组件类型内保持一致。所有按钮 12px，所有卡片 16px，所有 pill 8px。",
+      "hover 必须有反馈（颜色变化或微光晕），且过渡时间 180ms ease-out。",
+      "保留纸纹纹理。它在 body::before 里，3% opacity，关掉它界面就失去了手工感。"
+    ],
+    "donts": [
+      "使用大厂 SaaS 模板审美：白底、蓝按钮、Inter 字体、密集表格、渐变 hero section。",
+      "使用 AI 套壳审美：紫粉渐变、魔法 sparkle emoji、"一键生成"、"AI 赋能"之类的话术。",
+      "使用冷酷技术风：终端配色、荧光绿、等宽字体全文排版、完全没人味。",
+      "在卡片左侧或右侧使用大于 1px 的彩色侧边条纹。",
+      "在文字上使用 background-clip: text 渐变效果。",
+      "用玻璃拟态（backdrop-filter blur）作为默认卡片样式。",
+      "使用大数字 + 小标签 + 辅助统计的 hero-metric 模板。",
+      "使用完全相同尺寸的图标 + 标题 + 正文卡片网格。",
+      "把 modal 作为解决布局问题的首选。先用行内展开、渐进披露。",
+      "动画化 CSS layout 属性（width、height、top、left）。",
+      "使用弹跳或弹性缓动曲线。只用 ease-out-quart / ease-out-expo。"
+    ]
+  }
+}

@@ -15,13 +15,30 @@ export default function ExampleProjectCard() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto mb-12">
-      <button onClick={handleTry}
-        className="w-full p-5 rounded-[var(--radius-xl)] bg-[var(--color-surface)] border border-[var(--color-border)] hover:border-[var(--color-accent)] transition-ui text-left group relative overflow-hidden focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] focus-visible:outline-offset-2">
-        <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-accent-subtle)] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+    <div className="max-w-5xl mx-auto px-4 mb-10">
+      <button
+        onClick={handleTry}
+        className="w-full p-5 rounded-[var(--radius-xl)] border text-left group relative overflow-hidden focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] focus-visible:outline-offset-2 transition-all duration-300"
+        style={{
+          background: 'linear-gradient(135deg, var(--color-surface) 0%, var(--color-surface-raised) 100%)',
+          borderColor: 'var(--color-border)',
+        }}
+      >
+        <div
+          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+          style={{
+            background: 'radial-gradient(circle 400px at var(--glow-x, 50%) var(--glow-y, 50%), rgba(108,114,240,0.08), transparent)',
+          }}
+        />
         <div className="relative flex items-center gap-4">
-          <div className="w-10 h-10 rounded-full bg-[var(--color-accent-subtle)] flex items-center justify-center text-lg shrink-0" aria-hidden="true">
-            🚀
+          <div
+            className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: 'var(--color-accent-subtle)' }}
+            aria-hidden="true"
+          >
+            <svg className="w-5 h-5" style={{ color: 'var(--color-accent)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
           </div>
           <div className="flex-1 min-w-0">
             <h2 className="text-[15px] font-semibold text-[var(--color-text-primary)]">

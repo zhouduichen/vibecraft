@@ -5,9 +5,9 @@ import JSZip from 'jszip';
 
 // Extract inline manifest JSON from HTML
 function extractManifest(html: string): Record<string, unknown> | null {
-  const m = html.match(/href="data:application\/json,([^"]+)"/);
-  if (!m) return null;
-  try { return JSON.parse(decodeURIComponent(m[1])); } catch { return null; }
+  const m = html.match(/href\s*=\s*["']data:application\/json,([^"']+)["']/);
+  if (m) { try { return JSON.parse(decodeURIComponent(m[1])); } catch { return null; } }
+  return null;
 }
 
 // Extract emoji from manifest or HTML for icon generation
@@ -57,7 +57,15 @@ const URLS = ['./index.html', ${urlList}];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(URLS))
+    (async () => {
+      const cache = await caches.open(CACHE_NAME);
+      for (const url of URLS) {
+        try {
+          const res = await fetch(url, { mode: 'cors' });
+          if (res.ok) cache.put(url, res);
+        } catch { /* skip unreachable CDN — cached on next successful load */ }
+      }
+    })()
   );
   self.skipWaiting();
 });
@@ -79,7 +87,9 @@ self.addEventListener('fetch', (event) => {
 
 // Rewrite manifest — replace icons with actual file paths
 function rewriteManifest(manifest: Record<string, unknown>): string {
-  const m = JSON.parse(JSON.stringify(manifest));
+  const m = JSON.parse(JSON.stringify(manifest)) as Record<string, unknown>;
+  m.start_url = './';
+  delete m.scope;
   (m as any).icons = [
     { src: 'icons/icon-192.svg', sizes: '192x192', type: 'image/svg+xml' },
     { src: 'icons/icon-512.svg', sizes: '512x512', type: 'image/svg+xml' },
@@ -175,7 +185,7 @@ export async function POST(req: NextRequest) {
 
   // ── Build ZIP with subfolder ──
   const zip = new JSZip();
-  const root = zip.folder(folder)!;
+  const root = zip.folder(folder || '应用')!;
   root.file('index.html', project.current_html);
   root.file('sw.js', swJs);
   root.file('README.md', readme);
@@ -192,7 +202,7 @@ export async function POST(req: NextRequest) {
   return new NextResponse(Buffer.from(content), {
     headers: {
       'Content-Type': 'application/zip',
-      'Content-Disposition': `attachment; filename="${encodeURIComponent(project.name)}.zip"`,
+      'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(project.name)}.zip`,
     },
   });
 }

@@ -36,8 +36,7 @@ export async function POST(req: NextRequest) {
       });
     error = result.error;
     if (!error) {
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
-      const url = baseUrl ? `${baseUrl}/app/${slug}` : `${req.nextUrl.origin}/app/${slug}`;
+      const url = `${req.nextUrl.origin}/app/${slug}`;
       return NextResponse.json({ url, slug });
     }
     // If not a unique violation, fail immediately

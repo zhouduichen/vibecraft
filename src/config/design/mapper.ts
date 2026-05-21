@@ -12,11 +12,12 @@ export function mapAnswersToProfile(answers: TeachAnswer[]): DesignProfile {
     answers.find(a => a.questionId === questionId)?.selectedOptionId;
 
   const recipeChoice = get('recipe');
+  const FALLBACK_RECIPE_ID = 'cool';
   const baseRecipe = recipeChoice
     ? RECIPES.find(r => r.id === recipeChoice)?.profile
-    : RECIPES.find(r => r.id === 'cool')!.profile;
+    : RECIPES.find(r => r.id === FALLBACK_RECIPE_ID)?.profile;
 
-  if (!baseRecipe) throw new Error('Base recipe not found');
+  if (!baseRecipe) throw new Error(`Design recipe not found: "${recipeChoice || FALLBACK_RECIPE_ID}"`);
 
   // Apply top-level overrides from round 1-3 answers
   const sceneAnswer = get('scene');
