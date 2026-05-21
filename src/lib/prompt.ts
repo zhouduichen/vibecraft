@@ -1,7 +1,10 @@
+// src/lib/prompt.ts
 import type { Skill } from '@/config/skills';
+import type { DesignProfile } from './db';
+import { mapProfileToPromptText } from '@/config/design/mapper';
 
-export function buildSystemPrompt(): string {
-  return `你是一个精通单文件 Web 应用的 React 专家。
+export function buildSystemPrompt(designProfile?: DesignProfile | null): string {
+  const base = `你是一个精通单文件 Web 应用的 React 专家。
 当前应用通过 CDN 引入了 React 18 和 Tailwind CSS。你的所有逻辑、状态、UI 必须写在同一个文件的 <script type="text/babel"> 块中。
 数据必须使用全局的 React.useState 维护，并通过 localStorage 进行持久化存储。
 
@@ -21,6 +24,12 @@ babel standalone 已加载，JSX 写在 <script type="text/babel"> 内。
 
 【输出格式】
 只返回 \`\`\`html ... \`\`\` 包裹的完整代码，不要带有任何多余的 Markdown 解释。`;
+
+  if (designProfile) {
+    return base + '\n\n' + mapProfileToPromptText(designProfile);
+  }
+
+  return base;
 }
 
 export function buildUserPrompt(
