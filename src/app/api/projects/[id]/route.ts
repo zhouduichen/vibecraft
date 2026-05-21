@@ -37,12 +37,13 @@ export async function PUT(
 
   const { id } = await params;
   const body = await req.json();
-  const { name, current_html, selected_skills } = body;
+  const { name, current_html, selected_skills, design_profile } = body;
 
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (name !== undefined) updates.name = name;
   if (current_html !== undefined) updates.current_html = current_html;
   if (selected_skills !== undefined) updates.selected_skills = selected_skills;
+  if (design_profile !== undefined) updates.design_profile = design_profile;
 
   const { data, error } = await db
     .from('projects')
