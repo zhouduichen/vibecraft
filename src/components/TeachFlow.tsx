@@ -19,6 +19,7 @@ export default function TeachFlow({ projectId, onComplete, onSkip }: TeachFlowPr
   const [mode, setMode] = useState<Mode>('options');
   const [customText, setCustomText] = useState('');
   const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   const currentQuestion = QUESTIONS[roundIndex];
   if (!currentQuestion) {
@@ -120,13 +121,25 @@ export default function TeachFlow({ projectId, onComplete, onSkip }: TeachFlowPr
 
   const finishWithAnswers = async (finalAnswers: TeachAnswer[]) => {
     setSaving(true);
-    const profile = mapAnswersToProfile(finalAnswers);
-    await fetch(`/api/projects/${projectId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ design_profile: profile }),
-    });
-    onComplete(profile);
+    setErrorMsg('');
+    try {
+      const profile = mapAnswersToProfile(finalAnswers);
+      const res = await fetch(`/api/projects/${projectId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ design_profile: profile }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: '保存失败' }));
+        setErrorMsg(err.error || '保存设计配置失败，请重试');
+        setSaving(false);
+        return;
+      }
+      onComplete(profile);
+    } catch (e) {
+      setErrorMsg('网络异常，请重试');
+      setSaving(false);
+    }
   };
 
   return (
@@ -152,6 +165,19 @@ export default function TeachFlow({ projectId, onComplete, onSkip }: TeachFlowPr
 
       {/* Body */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3" role="log" aria-live="polite" aria-label="设计调校对话">
+        {/* Error message */}
+        {errorMsg && (
+          <div className="flex justify-start animate-[fadeIn_200ms_ease-out_both]">
+            <div
+              className="max-w-[88%] rounded-[var(--radius-md)] px-3.5 py-2.5 text-[13px] leading-relaxed"
+              style={{ background: 'var(--color-danger-subtle)', color: 'var(--color-danger)' }}
+              role="alert"
+            >
+              {errorMsg}
+            </div>
+          </div>
+        )}
+
         {/* System message */}
         <div className="flex justify-start animate-[fadeIn_300ms_ease-out_both]">
           <div
