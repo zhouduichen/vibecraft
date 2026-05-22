@@ -1,24 +1,44 @@
 'use client';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function ExampleProjectCard() {
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleTry = async () => {
-    const res = await fetch('/api/projects', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ template_id: 'ledger', name: '示例：我的记账本（含图表）' }),
-    });
-    const data = await res.json();
-    if (data.id) router.push(`/project/${data.id}`);
+    if (loading) return;
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ template_id: 'ledger', name: '示例：我的记账本（含图表）' }),
+      });
+      const data = await res.json();
+      if (data.id) {
+        router.push(`/project/${data.id}`);
+      } else {
+        setError(data.error || '创建失败，请重试');
+      }
+    } catch {
+      setError('网络异常，请检查连接后重试');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="max-w-5xl mx-auto px-4 mb-10">
+      {error && (
+        <p className="text-[12px] text-[var(--color-danger)] mb-3 px-4" role="alert">{error}</p>
+      )}
       <button
         onClick={handleTry}
-        className="w-full p-5 rounded-[var(--radius-xl)] border text-left group relative overflow-hidden focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] focus-visible:outline-offset-2 transition-all duration-300"
+        disabled={loading}
+        className="w-full p-5 rounded-[var(--radius-xl)] border text-left group relative overflow-hidden focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] focus-visible:outline-offset-2 transition-all duration-300 disabled:opacity-60"
         style={{
           background: 'linear-gradient(135deg, var(--color-surface) 0%, var(--color-surface-raised) 100%)',
           borderColor: 'var(--color-border)',
@@ -42,10 +62,10 @@ export default function ExampleProjectCard() {
           </div>
           <div className="flex-1 min-w-0">
             <h2 className="text-[15px] font-semibold text-[var(--color-text-primary)]">
-              1 分钟体验 VibeCraft
+              {loading ? '正在创建...' : '1 分钟体验 VibeCraft'}
             </h2>
             <p className="text-[13px] text-[var(--color-text-secondary)] mt-0.5">
-              点进来，试试输入"帮我加个饼图"看看 AI 怎么帮你改代码
+              点进来，试试输入「帮我加个饼图」看看 AI 怎么帮你改代码
             </p>
           </div>
           <span className="text-[var(--color-text-muted)] group-hover:text-[var(--color-accent)] group-hover:translate-x-0.5 transition-all duration-200 text-lg shrink-0" aria-hidden="true">

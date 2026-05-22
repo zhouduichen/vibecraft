@@ -6,6 +6,14 @@ import { buildSystemPrompt, buildUserPrompt } from '@/lib/prompt';
 
 const CREDITS_PER_REQUEST = 10;
 
+function getMessage(err: unknown): string | undefined {
+  if (err && typeof err === 'object' && 'message' in err) {
+    const message = (err as { message?: unknown }).message;
+    if (typeof message === 'string') return message;
+  }
+  return undefined;
+}
+
 export async function POST(req: NextRequest) {
   // 1. Auth check
   const session = await auth();
@@ -18,6 +26,17 @@ export async function POST(req: NextRequest) {
   const { projectId, userDemand, selectedSkills } = await req.json();
   if (!projectId || !userDemand || userDemand.trim().length < 5) {
     return NextResponse.json({ error: '请求内容过短，请描述具体需求' }, { status: 400 });
+  }
+
+  // 3. Check credits before the expensive AI call
+  const { data: dbUser } = await db
+    .from('users')
+    .select('credits')
+    .eq('id', userId)
+    .single();
+
+  if (!dbUser || dbUser.credits < CREDITS_PER_REQUEST) {
+    return NextResponse.json({ error: '您的算力余额不足，无法完成此次修改' }, { status: 402 });
   }
 
   // 4. Get project
@@ -72,8 +91,9 @@ export async function POST(req: NextRequest) {
   if (!aiResponse.ok) {
     let msg = 'AI 服务暂时不可用，请稍后重试';
     try {
-      const errData = await aiResponse.json();
-      if (errData?.message) msg = errData.message;
+      const errData = await aiResponse.json() as { message?: unknown; error?: { message?: unknown } };
+      if (typeof errData.message === 'string') msg = errData.message;
+      if (typeof errData.error?.message === 'string') msg = errData.error.message;
     } catch { /* ignore parse failure */ }
     return NextResponse.json({ error: msg }, { status: 502 });
   }
@@ -117,7 +137,9 @@ export async function POST(req: NextRequest) {
               if (data === '[DONE]') continue;
 
               try {
-                const parsed = JSON.parse(data);
+                const parsed = JSON.parse(data) as {
+                  choices?: Array<{ delta?: { content?: string } }>;
+                };
                 const content = parsed.choices?.[0]?.delta?.content || '';
                 if (content) {
                   fullResponse += content;
@@ -127,9 +149,9 @@ export async function POST(req: NextRequest) {
                     sendStep('writing', 'AI 正在根据你的需求编写代码...');
                   }
 
-                  // Partial code update for preview (mid-stream)
+                  // Partial code update for preview — only when we have a COMPLETE block
                   if (fullResponse.includes('```html') && !codeSent && fullResponse.length > 5000) {
-                    const match = fullResponse.match(/```html\s*([\s\S]*?)(```|$)/);
+                    const match = fullResponse.match(/```html\s*([\s\S]*?)```/);
                     if (match?.[1] && match[1].length > 1000) {
                       codeSent = true;
                       sendStep('applying', '代码初稿生成完毕，正在更新预览...');
@@ -139,16 +161,16 @@ export async function POST(req: NextRequest) {
                     }
                   }
                 }
-              } catch (e) {
-                if (!(e instanceof SyntaxError)) {
-                  console.error('Unexpected error parsing SSE data:', e);
+              } catch (err: unknown) {
+                if (!(err instanceof SyntaxError)) {
+                  console.error('Unexpected error parsing SSE data:', err);
                 }
               }
             }
           }
         }
-      } catch (e) {
-        console.error('Stream read error:', e);
+      } catch (err: unknown) {
+        console.error('Stream read error:', err);
         controller.enqueue(
           encoder.encode(`data: ${JSON.stringify({ type: 'error', message: '流式传输中断' })}\n\n`)
         );
@@ -160,26 +182,33 @@ export async function POST(req: NextRequest) {
 
       if (cleanCode) {
         sendStep('saving', '正在保存修改...');
+        let saved = false;
         try {
-          await db.rpc('chat_send_transaction', {
+          const { error: saveError } = await db.rpc('chat_send_transaction', {
             p_user_id: userId,
             p_project_id: projectId,
             p_new_html: cleanCode,
             p_message: userDemand.trim(),
-            p_credits_cost: CREDITS_PER_REQUEST,
+            p_cost: CREDITS_PER_REQUEST,
           });
-        } catch (e: any) {
-          const msg = e?.message?.includes('Insufficient credits')
+          if (saveError) throw saveError;
+          saved = true;
+        } catch (err: unknown) {
+          console.error('Failed to save project:', err);
+          const message = getMessage(err);
+          const msg = message?.includes('Insufficient credits')
             ? '您的算力余额不足，无法完成此次修改'
-            : '保存失败，但代码仍然有效';
+            : '保存失败，请稍后重试';
           controller.enqueue(
             encoder.encode(`data: ${JSON.stringify({ type: 'error', message: msg })}\n\n`)
           );
         }
-        sendStep('done', '修改完成，请在右侧预览查看效果');
-        controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify({ type: 'code', content: cleanCode })}\n\n`)
-        );
+        if (saved) {
+          sendStep('done', '修改完成，请在右侧预览查看效果');
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({ type: 'code', content: cleanCode })}\n\n`)
+          );
+        }
       } else {
         controller.enqueue(
           encoder.encode(`data: ${JSON.stringify({ type: 'error', message: 'AI 未返回有效代码，请重试' })}\n\n`)

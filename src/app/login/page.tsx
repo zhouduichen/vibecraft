@@ -1,12 +1,9 @@
 'use client';
 import { signIn } from 'next-auth/react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export default function Login() {
   const [loading, setLoading] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => { setMounted(true); }, []);
 
   const handleSignIn = () => {
     setLoading(true);
@@ -25,9 +22,7 @@ export default function Login() {
               className="text-[2.75rem] lg:text-[3.5rem] leading-[1.05] font-bold tracking-tight mb-6"
               style={{
                 color: 'var(--color-text-primary)',
-                opacity: mounted ? 1 : 0,
-                transform: mounted ? 'translateY(0)' : 'translateY(16px)',
-                transition: 'opacity 600ms ease-out 100ms, transform 600ms cubic-bezier(0.33, 0, 0.1, 1) 100ms',
+                animation: 'fadeInSlow 600ms cubic-bezier(0.33, 0, 0.1, 1) 100ms both',
               }}
             >
               VibeCraft
@@ -38,9 +33,7 @@ export default function Login() {
               className="text-[1.05rem] leading-relaxed max-w-xs mb-12"
               style={{
                 color: 'var(--color-text-secondary)',
-                opacity: mounted ? 1 : 0,
-                transform: mounted ? 'translateY(0)' : 'translateY(12px)',
-                transition: 'opacity 600ms ease-out 200ms, transform 600ms cubic-bezier(0.33, 0, 0.1, 1) 200ms',
+                animation: 'fadeInSlow 600ms cubic-bezier(0.33, 0, 0.1, 1) 200ms both',
               }}
             >
               选一个模板，用自然语言描述你想要的，<br />
@@ -50,9 +43,7 @@ export default function Login() {
             {/* Login button — crafted as a deliberate object */}
             <div
               style={{
-                opacity: mounted ? 1 : 0,
-                transform: mounted ? 'translateY(0)' : 'translateY(12px)',
-                transition: 'opacity 600ms ease-out 300ms, transform 600ms cubic-bezier(0.33, 0, 0.1, 1) 300ms',
+                animation: 'fadeInSlow 600ms cubic-bezier(0.33, 0, 0.1, 1) 300ms both',
               }}
             >
               <button
@@ -91,8 +82,8 @@ export default function Login() {
               className="mt-16 text-[12px]"
               style={{
                 color: 'var(--color-text-muted)',
-                opacity: mounted ? 0.5 : 0,
-                transition: 'opacity 800ms ease-out 600ms',
+                opacity: 0.5,
+                animation: 'fadeIn 800ms ease-out 600ms both',
               }}
             >
               不需要写一行代码

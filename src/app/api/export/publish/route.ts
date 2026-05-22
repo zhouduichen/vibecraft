@@ -3,6 +3,11 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { randomBytes } from 'crypto';
 
+type InsertError = {
+  code?: string;
+  message?: string;
+} | null;
+
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -24,7 +29,7 @@ export async function POST(req: NextRequest) {
 
   // Retry on slug collision
   let slug: string;
-  let error: any;
+  let error: InsertError = null;
   for (let attempt = 0; attempt < 3; attempt++) {
     slug = randomBytes(8).toString('hex');
     const result = await db

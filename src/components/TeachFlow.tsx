@@ -48,7 +48,7 @@ export default function TeachFlow({ projectId, onComplete, onSkip }: TeachFlowPr
             设计语言已就绪
           </p>
           <p className="text-[12px] text-[var(--color-text-muted)] max-w-[220px] leading-relaxed mb-4">
-            你可以随时通过"设计增强"菜单重新设定
+            你可以随时通过「设计增强」菜单重新设定
           </p>
           <button
             onClick={async () => {
@@ -136,7 +136,7 @@ export default function TeachFlow({ projectId, onComplete, onSkip }: TeachFlowPr
         return;
       }
       onComplete(profile);
-    } catch (e) {
+    } catch {
       setErrorMsg('网络异常，请重试');
       setSaving(false);
     }

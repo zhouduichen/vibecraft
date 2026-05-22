@@ -10,13 +10,38 @@ export interface Template {
   compatibleSkills: string[];
 }
 
+function iconDataUri(icon: string, bgColor: string, size: number): string {
+  const radius = Math.round(size * 0.17);
+  const fontSize = Math.round(size * 0.5);
+  const y = Math.round(size * 0.66);
+  const center = size / 2;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><rect width="${size}" height="${size}" rx="${radius}" fill="${bgColor}"/><text x="${center}" y="${y}" text-anchor="middle" font-size="${fontSize}">${icon}</text></svg>`;
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
+
+function manifestDataUri(name: string, shortName: string, themeColor: string, icon: string): string {
+  const manifest = {
+    name,
+    short_name: shortName,
+    start_url: '.',
+    display: 'standalone',
+    background_color: '#0f172a',
+    theme_color: themeColor,
+    icons: [
+      { src: iconDataUri(icon, themeColor, 192), sizes: '192x192', type: 'image/svg+xml' },
+      { src: iconDataUri(icon, themeColor, 512), sizes: '512x512', type: 'image/svg+xml' },
+    ],
+  };
+  return `data:application/json,${encodeURIComponent(JSON.stringify(manifest))}`;
+}
+
 function ledgerHtml(): string {
   return `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <link rel="manifest" href="data:application/json,{"name":"极简记账本","short_name":"记账本","start_url":".","display":"standalone","background_color":"#0f172a","theme_color":"#6366f1"}">
+  <link rel="manifest" href="${manifestDataUri('极简记账本', '记账本', '#6366f1', '💰')}">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -140,7 +165,7 @@ function todoHtml(): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <link rel="manifest" href="data:application/json,{"name":"Todo 提醒","short_name":"Todo","start_url":".","display":"standalone","background_color":"#0f172a","theme_color":"#10b981"}">
+  <link rel="manifest" href="${manifestDataUri('Todo 提醒', 'Todo', '#10b981', '✅')}">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -223,7 +248,7 @@ function checkinHtml(): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <link rel="manifest" href="data:application/json,{"name":"打卡手账","short_name":"打卡","start_url":".","display":"standalone","background_color":"#0f172a","theme_color":"#8b5cf6"}">
+  <link rel="manifest" href="${manifestDataUri('打卡手账', '打卡', '#8b5cf6', '📅')}">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>

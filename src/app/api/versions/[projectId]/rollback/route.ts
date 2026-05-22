@@ -14,6 +14,18 @@ export async function POST(
   const { projectId } = await params;
   const { versionId } = await req.json();
 
+  // Verify project ownership first
+  const { data: project } = await db
+    .from('projects')
+    .select('id')
+    .eq('id', projectId)
+    .eq('user_id', session.user.id)
+    .single();
+
+  if (!project) {
+    return NextResponse.json({ error: '项目不存在' }, { status: 404 });
+  }
+
   const { data: version } = await db
     .from('versions')
     .select('*')

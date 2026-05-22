@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import Providers from '@/components/Providers';
 import MouseGlow from '@/components/MouseGlow';
 import SWRegister from '@/components/SWRegister';
@@ -18,16 +19,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Providers>
           <SWRegister />
           <nav className="h-12 flex items-center px-6 gap-6 shrink-0 border-b border-[var(--color-border)] relative z-10" aria-label="主导航">
-            <a href="/" className="text-[15px] font-semibold tracking-tight text-[var(--color-text-primary)] hover:text-white transition-ui focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] focus-visible:outline-offset-2 rounded-sm">
+            <Link href="/" className="text-[15px] font-semibold tracking-tight text-[var(--color-text-primary)] hover:text-white transition-ui focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] focus-visible:outline-offset-2 rounded-sm">
               VibeCraft
-            </a>
+            </Link>
             <div className="flex gap-0.5">
-              <a href="/" className="px-3 py-1.5 rounded-[var(--radius-sm)] text-[13px] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)] transition-ui focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] focus-visible:outline-offset-2">
+              <Link href="/" className="px-3 py-1.5 rounded-[var(--radius-sm)] text-[13px] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)] transition-ui focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] focus-visible:outline-offset-2">
                 模板
-              </a>
-              <a href="/dashboard" className="px-3 py-1.5 rounded-[var(--radius-sm)] text-[13px] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)] transition-ui focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] focus-visible:outline-offset-2">
+              </Link>
+              <Link href="/dashboard" className="px-3 py-1.5 rounded-[var(--radius-sm)] text-[13px] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)] transition-ui focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] focus-visible:outline-offset-2">
                 项目
-              </a>
+              </Link>
             </div>
           </nav>
           <div className="relative z-10 flex-1 flex flex-col">

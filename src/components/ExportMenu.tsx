@@ -14,7 +14,12 @@ export default function ExportMenu({ projectId }: ExportMenuProps) {
   const [published, setPublished] = useState(false);
   const [error, setError] = useState('');
   const menuRef = useRef<HTMLDivElement>(null);
-  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const getErrorMessage = (err: unknown, fallback: string) => {
+    if (err instanceof Error && err.message) return err.message;
+    return fallback;
+  };
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -55,8 +60,8 @@ export default function ExportMenu({ projectId }: ExportMenuProps) {
       a.click();
       URL.revokeObjectURL(url);
       setOpen(false);
-    } catch (e: any) {
-      setError(e?.message || '网络异常，请重试');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, '网络异常，请重试'));
     } finally {
       setLoading(null);
     }
@@ -72,16 +77,16 @@ export default function ExportMenu({ projectId }: ExportMenuProps) {
         body: JSON.stringify({ projectId }),
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: '发布失败' }));
+        const err = await res.json().catch(() => ({ error: '发布失败' })) as { error?: string };
         throw new Error(err.error || '发布失败，请重试');
       }
-      const data = await res.json();
+      const data = await res.json() as { url?: string };
       if (!data.url) throw new Error('发布链接获取失败');
       setPublishUrl(data.url);
       setQrUrl(`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(data.url)}`);
       setPublished(true);
-    } catch (e: any) {
-      setError(e?.message || '网络异常，请重试');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, '网络异常，请重试'));
     } finally {
       setLoading(null);
     }
@@ -94,6 +99,7 @@ export default function ExportMenu({ projectId }: ExportMenuProps) {
   const copyUrl = () => {
     navigator.clipboard.writeText(publishUrl);
     setCopied(true);
+    if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
     copyTimeoutRef.current = setTimeout(() => setCopied(false), 2000);
   };
 

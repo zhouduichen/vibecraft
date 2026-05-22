@@ -15,7 +15,7 @@ export default async function PublishedApp({ params }: { params: Promise<{ slug:
     <iframe
       srcDoc={data.html_content}
       title="VibeCraft App"
-      sandbox="allow-scripts allow-forms allow-popups"
+      sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
       style={{ width: '100vw', height: '100vh', border: 'none', display: 'block' }}
     />
   );

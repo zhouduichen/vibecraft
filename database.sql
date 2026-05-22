@@ -35,12 +35,17 @@ CREATE TABLE IF NOT EXISTS projects (
     name            VARCHAR(255) NOT NULL CHECK (name <> ''),
     current_html    TEXT NOT NULL,
     selected_skills VARCHAR(50)[] DEFAULT '{}',
+    design_profile  JSONB DEFAULT NULL,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 COMMENT ON TABLE projects IS 'User app projects, each started from a template';
 COMMENT ON COLUMN projects.current_html IS 'Current full React CDN HTML of the project';
 COMMENT ON COLUMN projects.selected_skills IS 'Array of enabled skill IDs from config';
+COMMENT ON COLUMN projects.design_profile IS 'Optional design preference profile used to steer AI generation';
+
+-- Existing installations can apply this safely after the table already exists.
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS design_profile JSONB DEFAULT NULL;
 
 -- Auto-update updated_at on projects
 DROP TRIGGER IF EXISTS trg_projects_updated_at ON projects;
@@ -90,6 +95,17 @@ CREATE INDEX IF NOT EXISTS idx_published_apps_slug     ON published_apps(slug);
 CREATE INDEX IF NOT EXISTS idx_credit_tx_user_id       ON credit_transactions(user_id);
 CREATE INDEX IF NOT EXISTS idx_credit_tx_user_created  ON credit_transactions(user_id, created_at DESC);
 
+-- ── RLS Note ────────────────────────────────────────────────
+-- Row Level Security is NOT enabled because this app uses
+-- NextAuth (not Supabase Auth), so auth.uid() does not match
+-- the VibeCraft user IDs. All authorization is enforced at the
+-- API layer via eq('user_id', session.user.id). The service
+-- role key bypasses RLS — ensure every API route adds ownership
+-- checks before any DB mutation.
+-- When migrating to Supabase Auth, enable:
+--   ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
+--   CREATE POLICY p ON projects USING (user_id = auth.uid());
+
 -- ── Core Transaction ───────────────────────────────────────
 
 -- Atomic: deduct credits + update project HTML + insert version + log transaction
@@ -101,6 +117,12 @@ CREATE OR REPLACE FUNCTION chat_send_transaction(
     p_cost       INT DEFAULT 10
 ) RETURNS void AS $$
 BEGIN
+    -- 0. Verify project ownership (defense-in-depth)
+    PERFORM 1 FROM projects WHERE id = p_project_id AND user_id = p_user_id;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Project does not belong to user';
+    END IF;
+
     -- 1. Atomic credit deduction
     UPDATE users
     SET credits = credits - p_cost

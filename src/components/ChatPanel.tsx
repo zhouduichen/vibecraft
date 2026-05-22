@@ -1,7 +1,7 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
 import SkillSelector from './SkillSelector';
-import DesignEnhancementToggle from './DesignEnhancementToggle';
+import DesignCapsule from './DesignCapsule';
 import TeachFlow from './TeachFlow';
 import type { DesignProfile } from '@/lib/db';
 
@@ -35,6 +35,7 @@ export default function ChatPanel({
   const [validationMsg, setValidationMsg] = useState('');
   const [currentStep, setCurrentStep] = useState('');
   const [teachMode, setTeachMode] = useState(false);
+  const [activeSkills, setActiveSkills] = useState<string[]>(selectedSkills);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -75,7 +76,7 @@ export default function ChatPanel({
       const res = await fetch('/api/chat/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId, userDemand: demand, selectedSkills }),
+        body: JSON.stringify({ projectId, userDemand: demand, selectedSkills: activeSkills }),
       });
 
       if (!res.ok) {
@@ -100,6 +101,7 @@ export default function ChatPanel({
       const decoder = new TextDecoder();
       let buffer = '';
       let gotCode = false;
+      let gotError = false;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -112,35 +114,52 @@ export default function ChatPanel({
             const payload = line.slice(6);
             if (payload === '[DONE]') continue;
             try {
-              const data = JSON.parse(payload);
+              const data = JSON.parse(payload) as {
+                type?: 'step' | 'code' | 'error';
+                step?: string;
+                detail?: string;
+                content?: string;
+                message?: string;
+              };
               if (data.type === 'step') {
-                setCurrentStep(data.step === 'done' ? '' : data.detail || data.step);
+                setCurrentStep(data.step === 'done' ? '' : data.detail || data.step || '');
                 if (data.step === 'done') {
                   setMessages(prev => [...prev, { role: 'assistant', content: data.detail || '修改完成，请在右侧预览查看效果', status: 'ok' }]);
                 }
               } else if (data.type === 'code') {
-                onCodeUpdate(data.content);
+                onCodeUpdate(data.content || '');
                 gotCode = true;
               } else if (data.type === 'error') {
-                setMessages(prev => [...prev, { role: 'assistant', content: data.message, status: 'error' }]);
+                gotError = true;
+                setMessages(prev => [...prev, { role: 'assistant', content: data.message || '请求失败，请重试', status: 'error' }]);
                 setCurrentStep('');
               }
-            } catch (e) {
-              if (!(e instanceof SyntaxError)) console.error('SSE parse error:', e);
+            } catch (err: unknown) {
+              if (!(err instanceof SyntaxError)) console.error('SSE parse error:', err);
             }
           }
         }
       }
 
-      if (!gotCode && currentStep) {
+      if (!gotCode && !gotError) {
         setMessages(prev => [...prev, { role: 'assistant', content: 'AI 未返回有效结果，请换个说法再试一次', status: 'error' }]);
       }
-    } catch (e: any) {
+    } catch (err) {
+      console.error('Chat send failed:', err);
       setMessages(prev => [...prev, { role: 'assistant', content: '网络异常，请检查连接后重试', status: 'error' }]);
     }
     setCurrentStep('');
     setIsLoading(false);
     onStreamEnd();
+    // Auto-sync design profile from DB after each response
+    if (designProfile) {
+      fetch(`/api/projects/${projectId}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data?.design_profile) onDesignProfileChange(data.design_profile);
+        })
+        .catch(() => {});
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -186,7 +205,7 @@ export default function ChatPanel({
                   告诉我你想怎么改
                 </p>
                 <p className="text-[12px] text-[var(--color-text-muted)] mt-1.5 leading-relaxed max-w-[220px] mx-auto">
-                  试试"把背景色换成浅色"或"在顶部加一个导航栏"
+                  试试「把背景色换成浅色」或「在顶部加一个导航栏」
                 </p>
               </div>
             )}
@@ -232,13 +251,17 @@ export default function ChatPanel({
             <div ref={bottomRef} />
           </div>
 
-          <SkillSelector projectId={projectId} templateId={templateId} initialSkills={selectedSkills} />
+          <SkillSelector
+            projectId={projectId}
+            templateId={templateId}
+            selectedSkills={activeSkills}
+            onChange={setActiveSkills}
+          />
 
-          {/* Design enhancement toggle */}
-          <div className="px-4 pb-1.5 flex items-center gap-2">
-            <DesignEnhancementToggle
-              enabled={!!designProfile}
-              hasProfile={!!designProfile}
+          {/* Design enhancement capsule card */}
+          <div className="px-4 pb-3">
+            <DesignCapsule
+              profile={designProfile}
               onToggle={(next) => {
                 if (next && !designProfile) {
                   setTeachMode(true);
