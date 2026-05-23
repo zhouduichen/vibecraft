@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  </style>
+  <title>产品落地页</title>
+</head>
+<body class="bg-slate-950 text-slate-100">
+  <header class="border-b border-slate-800">
+    <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+      <span class="text-lg font-bold text-blue-400">LaunchPad</span>
+      <div class="hidden sm:flex gap-6 text-sm text-slate-400">
+        <a href="#features" class="hover:text-white transition">功能</a>
+        <a href="#pricing" class="hover:text-white transition">价格</a>
+        <a href="#faq" class="hover:text-white transition">FAQ</a>
+      </div>
+      <button class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition">免费试用</button>
+    </div>
+  </header>
+
+  <section class="max-w-5xl mx-auto px-4 py-20 text-center">
+    <span class="text-xs px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 font-medium mb-6 inline-block">v2.0 全新发布</span>
+    <h1 class="text-4xl sm:text-5xl font-bold mb-4 leading-tight">更快地<span class="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">发布产品</span></h1>
+    <p class="text-slate-400 max-w-lg mx-auto mb-8 text-lg">一站式产品发布平台，从原型到上线，全部在一个地方完成。节省 80% 的发布准备时间。</p>
+    <div class="flex justify-center gap-3">
+      <button class="px-6 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition">立即开始</button>
+      <button class="px-6 py-3 rounded-xl border border-slate-700 text-slate-300 font-semibold hover:border-slate-500 transition">查看演示</button>
+    </div>
+    <div class="mt-12 bg-slate-900 rounded-xl border border-slate-800 p-4">
+      <div class="bg-slate-800 rounded-lg h-48 flex items-center justify-center text-slate-600 text-sm">产品截图预览区域</div>
+    </div>
+  </section>
+
+  <section id="features" class="max-w-5xl mx-auto px-4 py-16 border-t border-slate-800">
+    <h2 class="text-2xl font-bold text-center mb-10">核心功能</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+      <div class="text-center p-6">
+        <div class="w-14 h-14 rounded-2xl bg-blue-500/20 flex items-center justify-center text-2xl mx-auto mb-4">⚡</div>
+        <h3 class="font-semibold mb-2">极速部署</h3>
+        <p class="text-sm text-slate-400">一键部署到全球 CDN，秒级生效，零配置。</p>
+      </div>
+      <div class="text-center p-6">
+        <div class="w-14 h-14 rounded-2xl bg-purple-500/20 flex items-center justify-center text-2xl mx-auto mb-4">🔒</div>
+        <h3 class="font-semibold mb-2">安全可靠</h3>
+        <p class="text-sm text-slate-400">自动 SSL、DDoS 防护，SOC 2 合规。</p>
+      </div>
+      <div class="text-center p-6">
+        <div class="w-14 h-14 rounded-2xl bg-cyan-500/20 flex items-center justify-center text-2xl mx-auto mb-4">📊</div>
+        <h3 class="font-semibold mb-2">实时分析</h3>
+        <p class="text-sm text-slate-400">内置分析面板，实时追踪访问数据和转化率。</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="pricing" class="max-w-5xl mx-auto px-4 py-16 border-t border-slate-800">
+    <h2 class="text-2xl font-bold text-center mb-10">简单定价</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto">
+      <div class="bg-slate-900 rounded-xl border border-slate-800 p-6">
+        <h3 class="font-semibold mb-2">入门版</h3>
+        <p class="text-3xl font-bold mb-1">¥0</p>
+        <p class="text-sm text-slate-400 mb-4">永久免费</p>
+        <ul class="text-sm text-slate-400 space-y-2">
+          <li>✓ 1 个项目</li>
+          <li>✓ 100MB 存储</li>
+          <li>✓ 社区支持</li>
+        </ul>
+        <button class="w-full mt-6 py-2 rounded-lg border border-slate-700 text-sm font-medium">开始使用</button>
+      </div>
+      <div class="bg-blue-600 rounded-xl p-6 transform scale-105">
+        <h3 class="font-semibold mb-2">专业版</h3>
+        <p class="text-3xl font-bold mb-1">¥99<span class="text-sm font-normal">/月</span></p>
+        <p class="text-sm text-blue-200 mb-4">最受欢迎</p>
+        <ul class="text-sm text-blue-100 space-y-2">
+          <li>✓ 无限项目</li>
+          <li>✓ 10GB 存储</li>
+          <li>✓ 优先支持</li>
+          <li>✓ 自定义域名</li>
+        </ul>
+        <button class="w-full mt-6 py-2 rounded-lg bg-white text-blue-600 text-sm font-medium">立即订阅</button>
+      </div>
+      <div class="bg-slate-900 rounded-xl border border-slate-800 p-6">
+        <h3 class="font-semibold mb-2">企业版</h3>
+        <p class="text-3xl font-bold mb-1">联系</p>
+        <p class="text-sm text-slate-400 mb-4">定制方案</p>
+        <ul class="text-sm text-slate-400 space-y-2">
+          <li>✓ 所有专业功能</li>
+          <li>✓ SSO / SAML</li>
+          <li>✓ 专属支持</li>
+          <li>✓ SLA 保障</li>
+        </ul>
+        <button class="w-full mt-6 py-2 rounded-lg border border-slate-700 text-sm font-medium">联系我们</button>
+      </div>
+    </div>
+  </section>
+
+  <footer class="border-t border-slate-800 py-8 text-center text-sm text-slate-600">
+    © 2026 LaunchPad. Built with VibeCraft.
+  </footer>
+</body>
+</html>

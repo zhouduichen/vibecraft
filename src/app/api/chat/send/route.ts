@@ -3,6 +3,8 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { SKILLS } from '@/config/skills';
 import { buildSystemPrompt, buildUserPrompt } from '@/lib/prompt';
+import { asStringArray, asTrimmedString, asUuid, validationError } from '@/lib/api/validation';
+import { extractGeneratedHtml } from '@/lib/ai/html';
 
 const CREDITS_PER_REQUEST = 10;
 
@@ -22,10 +24,17 @@ export async function POST(req: NextRequest) {
   }
   const userId = session.user.id;
 
-  // 2. Parse request
-  const { projectId, userDemand, selectedSkills } = await req.json();
-  if (!projectId || !userDemand || userDemand.trim().length < 5) {
-    return NextResponse.json({ error: '请求内容过短，请描述具体需求' }, { status: 400 });
+  // 2. Parse and validate request
+  let projectId: string;
+  let userDemand: string;
+  let selectedSkills: string[];
+  try {
+    const body = await req.json() as { projectId?: unknown; userDemand?: unknown; selectedSkills?: unknown };
+    projectId = asUuid(body.projectId, 'projectId');
+    userDemand = asTrimmedString(body.userDemand, 'userDemand', 5, 2000);
+    selectedSkills = asStringArray(body.selectedSkills, 'selectedSkills', new Set(Object.keys(SKILLS)));
+  } catch (err) {
+    return NextResponse.json(validationError(err instanceof Error ? err.message : '请求内容过短，请描述具体需求'), { status: 400 });
   }
 
   // 3. Check credits before the expensive AI call
@@ -56,17 +65,23 @@ export async function POST(req: NextRequest) {
   const systemPrompt = buildSystemPrompt(designProfile);
   const userPrompt = buildUserPrompt(
     project.current_html,
-    userDemand.trim(),
-    selectedSkills || [],
+    userDemand,
+    selectedSkills,
     SKILLS
   );
 
   // 6. Call AI API with streaming
   const aiBaseUrl = process.env.AI_API_BASE_URL || 'https://api.siliconflow.cn';
-  const aiApiKey = process.env.AI_API_KEY || 'placeholder';
+  const aiApiKey = process.env.AI_API_KEY;
   const aiModel = process.env.AI_MODEL || 'deepseek-ai/DeepSeek-V3';
 
+  if (!aiApiKey) {
+    return NextResponse.json({ error: 'AI API key is not configured' }, { status: 500 });
+  }
+
   let aiResponse: Response;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 90_000);
   try {
     aiResponse = await fetch(`${aiBaseUrl}/v1/chat/completions`, {
       method: 'POST',
@@ -83,9 +98,12 @@ export async function POST(req: NextRequest) {
         stream: true,
         max_tokens: 8192,
       }),
+      signal: controller.signal,
     });
   } catch {
     return NextResponse.json({ error: 'AI 服务暂时不可用，请稍后重试' }, { status: 503 });
+  } finally {
+    clearTimeout(timeout);
   }
 
   if (!aiResponse.ok) {
@@ -177,8 +195,7 @@ export async function POST(req: NextRequest) {
       }
 
       // 8. Extract final code and persist
-      const codeMatch = fullResponse.match(/```html\s*([\s\S]*?)(```|$)/);
-      const cleanCode = codeMatch?.[1]?.trim();
+      const cleanCode = extractGeneratedHtml(fullResponse);
 
       if (cleanCode) {
         sendStep('saving', '正在保存修改...');
@@ -188,7 +205,7 @@ export async function POST(req: NextRequest) {
             p_user_id: userId,
             p_project_id: projectId,
             p_new_html: cleanCode,
-            p_message: userDemand.trim(),
+            p_message: userDemand,
             p_cost: CREDITS_PER_REQUEST,
           });
           if (saveError) throw saveError;

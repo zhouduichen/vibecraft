@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    .app-container { max-width: 600px; margin: 0 auto; min-height: 100vh; }
+  </style>
+  <title>读书笔记</title>
+</head>
+<body class="bg-slate-950">
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+    const STORAGE_KEY = 'vibecraft_reading_notes';
+
+    function App() {
+      const [books, setBooks] = useState(() => {
+        try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+        catch { return []; }
+      });
+      const [showForm, setShowForm] = useState(false);
+      const [form, setForm] = useState({ title: '', author: '', rating: 3, note: '', status: 'reading' });
+
+      useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(books)); }, [books]);
+
+      const addBook = () => {
+        if (!form.title.trim()) return;
+        setBooks(prev => [{ id: Date.now(), ...form, title: form.title.trim(), author: form.author.trim(), note: form.note.trim(), addedAt: new Date().toISOString().slice(0, 10) }, ...prev]);
+        setForm({ title: '', author: '', rating: 3, note: '', status: 'reading' });
+        setShowForm(false);
+      };
+
+      const deleteBook = (id) => setBooks(prev => prev.filter(b => b.id !== id));
+      const updateStatus = (id, status) => setBooks(prev => prev.map(b => b.id === id ? {...b, status} : b));
+
+      const statusLabel = { reading: '在读', finished: '已读', wishlist: '想读' };
+      const statusColor = { reading: 'text-emerald-400 bg-emerald-500/10', finished: 'text-blue-400 bg-blue-500/10', wishlist: 'text-amber-400 bg-amber-500/10' };
+
+      return (
+        <div className="app-container px-4 py-6">
+          <h1 className="text-2xl font-bold text-white mb-1">📚 读书笔记</h1>
+          <p className="text-slate-500 text-sm mb-5">{books.length} 本书在书单中</p>
+
+          <div className="space-y-3">
+            {books.map(book => (
+              <div key={book.id} className="bg-slate-800 rounded-xl p-4 border border-slate-700">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <h3 className="text-white font-medium">{book.title}</h3>
+                    {book.author && <p className="text-sm text-slate-500">{book.author}</p>}
+                  </div>
+                  <button onClick={() => deleteBook(book.id)} className="text-slate-600 hover:text-red-400 text-sm ml-2">✕</button>
+                </div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={'text-xs px-2 py-0.5 rounded-full ' + (statusColor[book.status] || statusColor.reading)}>
+                    {statusLabel[book.status] || book.status}
+                  </span>
+                  <span className="text-xs text-amber-400">{'⭐'.repeat(Math.min(5, book.rating || 0))}{'☆'.repeat(Math.max(0, 5 - (book.rating || 0)))}</span>
+                </div>
+                {book.note && <p className="text-sm text-slate-400 leading-relaxed bg-slate-900 rounded-lg p-3">{book.note}</p>}
+                <div className="flex gap-2 mt-3">
+                  {['reading', 'finished', 'wishlist'].map(s => (
+                    <button key={s} onClick={() => updateStatus(book.id, s)} className={'text-xs px-3 py-1 rounded-full transition ' + (book.status === s ? statusColor[s] : 'text-slate-600 bg-slate-900')}>
+                      {statusLabel[s]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {showForm && (
+            <div className="bg-slate-800 rounded-2xl p-4 mt-4 space-y-3 border border-slate-700">
+              <input type="text" placeholder="书名 *" value={form.title} className="w-full bg-slate-900 rounded-xl px-4 py-3 text-white placeholder-slate-500 outline-none border border-slate-700 focus:border-emerald-500" onChange={e => setForm(f => ({...f, title: e.target.value}))} />
+              <input type="text" placeholder="作者" value={form.author} className="w-full bg-slate-900 rounded-xl px-4 py-3 text-white placeholder-slate-500 outline-none border border-slate-700 focus:border-emerald-500" onChange={e => setForm(f => ({...f, author: e.target.value}))} />
+              <div>
+                <label className="text-xs text-slate-400 mb-1 block">评分</label>
+                <input type="range" min="1" max="5" value={form.rating} className="w-full accent-emerald-500" onChange={e => setForm(f => ({...f, rating: parseInt(e.target.value)}))} />
+                <span className="text-xs text-amber-400">{'⭐'.repeat(form.rating)}</span>
+              </div>
+              <textarea placeholder="笔记..." value={form.note} rows={3} className="w-full bg-slate-900 rounded-xl px-4 py-3 text-white placeholder-slate-500 outline-none border border-slate-700 focus:border-emerald-500 resize-none" onChange={e => setForm(f => ({...f, note: e.target.value}))}></textarea>
+              <button onClick={addBook} className="w-full py-3 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition">添加到书单</button>
+            </div>
+          )}
+
+          <button onClick={() => setShowForm(v => !v)} className="fixed bottom-6 right-6 w-14 h-14 bg-emerald-600 text-white rounded-full text-2xl shadow-xl hover:bg-emerald-700 transition flex items-center justify-center">
+            {showForm ? '✕' : '+'}
+          </button>
+        </div>
+      );
+    }
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

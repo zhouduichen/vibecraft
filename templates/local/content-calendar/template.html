@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    .app-container { max-width: 640px; margin: 0 auto; min-height: 100vh; }
+  </style>
+  <title>内容日历</title>
+</head>
+<body class="bg-slate-950">
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+    const STORAGE_KEY = 'vibecraft_content_calendar';
+    const PLATFORMS = ['小红书', '微博', '公众号', '抖音', 'B站'];
+    const PLATFORM_COLORS = {
+      '小红书': '#ff2442', '微博': '#e6162d', '公众号': '#07c160',
+      '抖音': '#000000', 'B站': '#fb7299'
+    };
+
+    function App() {
+      const [events, setEvents] = useState(() => {
+        try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+        catch { return []; }
+      });
+      const [showForm, setShowForm] = useState(false);
+      const [filter, setFilter] = useState('all');
+      const [form, setForm] = useState({ title: '', date: '', platform: '小红书', status: 'planned' });
+
+      useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(events)); }, [events]);
+
+      const addEvent = () => {
+        if (!form.title.trim() || !form.date) return;
+        setEvents(prev => [...prev, { id: Date.now(), title: form.title.trim(), date: form.date, platform: form.platform, status: form.status }].sort((a, b) => a.date.localeCompare(b.date)));
+        setForm({ title: '', date: '', platform: '小红书', status: 'planned' });
+        setShowForm(false);
+      };
+
+      const deleteEvent = (id) => setEvents(prev => prev.filter(e => e.id !== id));
+      const toggleStatus = (id) => setEvents(prev => prev.map(e => e.id === id ? {...e, status: e.status === 'done' ? 'planned' : 'done'} : e));
+
+      const today = new Date().toISOString().slice(0, 10);
+      const filtered = events.filter(e => {
+        if (filter === 'upcoming') return e.date >= today && e.status !== 'done';
+        if (filter === 'done') return e.status === 'done';
+        if (filter === 'overdue') return e.date < today && e.status !== 'done';
+        return true;
+      });
+
+      const grouped = {};
+      filtered.forEach(e => {
+        if (!grouped[e.date]) grouped[e.date] = [];
+        grouped[e.date].push(e);
+      });
+
+      return (
+        <div className="app-container px-4 py-6">
+          <h1 className="text-2xl font-bold text-white mb-1">📅 内容日历</h1>
+          <p className="text-slate-500 text-sm mb-4">{events.filter(e => e.status !== 'done').length} 项待发布</p>
+
+          <div className="flex gap-2 mb-5 flex-wrap">
+            {[{key:'all',label:'全部'},{key:'upcoming',label:'即将发布'},{key:'done',label:'已发布'},{key:'overdue',label:'已逾期'}].map(f => (
+              <button key={f.key} onClick={() => setFilter(f.key)} className={'px-3 py-1.5 rounded-full text-xs font-medium transition ' + (filter === f.key ? 'bg-violet-600 text-white' : 'bg-slate-800 text-slate-400')}>{f.label}</button>
+            ))}
+          </div>
+
+          <div className="space-y-6">
+            {Object.keys(grouped).map(date => (
+              <div key={date}>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-sm font-semibold text-slate-300">{date}</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-500">
+                    {new Date(date).toLocaleDateString('zh-CN', { weekday: 'short' })}
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {grouped[date].map(e => (
+                    <div key={e.id} className={'flex items-center gap-3 bg-slate-800 rounded-xl p-3 border transition ' + (e.status === 'done' ? 'border-slate-700 opacity-60' : 'border-slate-700')}>
+                      <button onClick={() => toggleStatus(e.id)} className={'w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs flex-shrink-0 transition ' + (e.status === 'done' ? 'bg-violet-600 border-violet-600 text-white' : 'border-slate-600 text-transparent')}>✓</button>
+                      <div className="flex-1 min-w-0">
+                        <p className={'text-sm truncate ' + (e.status === 'done' ? 'text-slate-600 line-through' : 'text-white')}>{e.title}</p>
+                      </div>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-medium flex-shrink-0" style={{backgroundColor: (PLATFORM_COLORS[e.platform] || '#6b7280') + '20', color: PLATFORM_COLORS[e.platform] || '#9ca3af'}}>{e.platform}</span>
+                      <button onClick={() => deleteEvent(e.id)} className="text-slate-600 hover:text-red-400 text-sm flex-shrink-0">✕</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+            {filtered.length === 0 && <p className="text-center text-slate-600 py-12">暂无内容计划</p>}
+          </div>
+
+          {showForm && (
+            <div className="bg-slate-800 rounded-2xl p-4 mt-4 space-y-3 border border-slate-700">
+              <input type="text" placeholder="内容标题 *" value={form.title} className="w-full bg-slate-900 rounded-xl px-4 py-3 text-white placeholder-slate-500 outline-none border border-slate-700 focus:border-violet-500" onChange={e => setForm(f => ({...f, title: e.target.value}))} />
+              <input type="date" value={form.date} className="w-full bg-slate-900 rounded-xl px-4 py-3 text-white outline-none border border-slate-700 focus:border-violet-500 [color-scheme:dark]" onChange={e => setForm(f => ({...f, date: e.target.value}))} />
+              <select value={form.platform} className="w-full bg-slate-900 rounded-xl px-4 py-3 text-white outline-none border border-slate-700" onChange={e => setForm(f => ({...f, platform: e.target.value}))}>
+                {PLATFORMS.map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+              <button onClick={addEvent} className="w-full py-3 bg-violet-600 text-white rounded-xl font-semibold hover:bg-violet-700 transition">添加到日历</button>
+            </div>
+          )}
+
+          <button onClick={() => setShowForm(v => !v)} className="fixed bottom-6 right-6 w-14 h-14 bg-violet-600 text-white rounded-full text-2xl shadow-xl hover:bg-violet-700 transition flex items-center justify-center">
+            {showForm ? '✕' : '+'}
+          </button>
+        </div>
+      );
+    }
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

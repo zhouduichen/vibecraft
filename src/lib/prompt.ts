@@ -6,7 +6,7 @@ import { mapProfileToPromptText } from '@/config/design/mapper';
 export function buildSystemPrompt(designProfile?: DesignProfile | null): string {
   const base = `你是一个精通单文件 Web 应用的 React 专家。
 当前应用通过 CDN 引入了 React（UMD 方式）和 Tailwind CSS。你的所有逻辑、状态、UI 必须写在同一个文件的 <script type="text/babel"> 块中。
-数据必须使用全局的 React.useState 维护，并通过 localStorage 进行持久化存储。
+数据必须使用 React.useState 维护，并通过 localStorage 持久化；所有 localStorage.getItem/setItem 必须包在 try/catch 中，避免沙箱或隐私模式下抛错导致白屏。
 
 【铁律一：全量交付原则】
 每次修改必须返回 100% 完整的 HTML 全量源码。严禁使用 "// 保持原有逻辑不变" 或 "/* 省略此处代码 */" 或 "此处代码不变" 等任何省略描述。
@@ -64,3 +64,4 @@ ${skillSection}
 ${userDemand}
 
 请返回一份 100% 完整的 HTML，包含上述技能功能 + 用户需求的所有改动，可以直接保存为 .html 在浏览器中打开运行。`;
+}

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    .app-container { max-width: 480px; margin: 0 auto; min-height: 100vh; }
+    input, select, button { font-size: 16px; }
+  </style>
+  <title>极简记账本</title>
+</head>
+<body class="bg-slate-950">
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useCallback } = React;
+    const STORAGE_KEY = 'vibecraft_ledger_data';
+    const CATEGORIES = ['餐饮', '交通', '购物', '娱乐', '居住', '医疗', '教育', '其他'];
+    const CATEGORY_COLORS = {
+      '餐饮': '#f97316', '交通': '#3b82f6', '购物': '#ec4899', '娱乐': '#8b5cf6',
+      '居住': '#10b981', '医疗': '#ef4444', '教育': '#6366f1', '其他': '#6b7280'
+    };
+
+    function App() {
+      const [records, setRecords] = useState(() => {
+        try { const saved = localStorage.getItem(STORAGE_KEY); return saved ? JSON.parse(saved) : []; }
+        catch { return []; }
+      });
+      const [showForm, setShowForm] = useState(false);
+      const [filterType, setFilterType] = useState('all');
+      const [form, setForm] = useState({ type: 'expense', amount: '', category: '餐饮', note: '' });
+
+      useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(records)); }, [records]);
+
+      const addRecord = useCallback(() => {
+        if (!form.amount || parseFloat(form.amount) <= 0) return;
+        setRecords(prev => [{ id: Date.now(), type: form.type, amount: parseFloat(form.amount), category: form.category, note: form.note || form.category, date: new Date().toISOString().slice(0, 10) }, ...prev]);
+        setForm({ type: 'expense', amount: '', category: '餐饮', note: '' });
+        setShowForm(false);
+      }, [form]);
+
+      const deleteRecord = useCallback((id) => { setRecords(prev => prev.filter(r => r.id !== id)); }, []);
+
+      const totalIncome = records.filter(r => r.type === 'income').reduce((s, r) => s + r.amount, 0);
+      const totalExpense = records.filter(r => r.type === 'expense').reduce((s, r) => s + r.amount, 0);
+      const balance = totalIncome - totalExpense;
+
+      const filteredRecords = records.filter(r => {
+        if (filterType === 'income') return r.type === 'income';
+        if (filterType === 'expense') return r.type === 'expense';
+        return true;
+      });
+
+      return (
+        <div className="app-container px-4 py-6">
+          <h1 className="text-2xl font-bold text-white mb-2">💰 极简记账</h1>
+          <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-2xl p-5 mb-5 text-white shadow-lg">
+            <p className="text-sm text-indigo-200 mb-1">本月余额</p>
+            <p className="text-3xl font-bold">{balance.toFixed(2)}</p>
+            <div className="flex justify-between mt-3 text-sm">
+              <span className="text-green-300">收入 +{totalIncome.toFixed(2)}</span>
+              <span className="text-rose-300">支出 -{totalExpense.toFixed(2)}</span>
+            </div>
+          </div>
+          <div className="flex gap-2 mb-4">
+            {['all', 'expense', 'income'].map(t => (
+              <button key={t} className={"px-4 py-1.5 rounded-full text-sm font-medium transition " + (filterType === t ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400')} onClick={() => setFilterType(t)}>
+                {t === 'all' ? '全部' : t === 'expense' ? '支出' : '收入'}
+              </button>
+            ))}
+          </div>
+          <div className="space-y-2 mb-4">
+            {filteredRecords.map(r => (
+              <div key={r.id} className="flex items-center justify-between bg-slate-800 rounded-xl p-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg" style={{backgroundColor: CATEGORY_COLORS[r.category] + '20'}}>
+                    {r.type === 'income' ? '📥' : '📤'}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-white">{r.note}</p>
+                    <p className="text-xs text-slate-500">{r.date} · {r.category}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={"font-semibold " + (r.type === 'income' ? 'text-green-400' : 'text-rose-400')}>{r.type === 'income' ? '+' : '-'}{r.amount.toFixed(2)}</span>
+                  <button onClick={() => deleteRecord(r.id)} className="text-slate-600 hover:text-red-400 text-sm px-1">✕</button>
+                </div>
+              </div>
+            ))}
+            {filteredRecords.length === 0 && <p className="text-center text-slate-600 py-8">暂无记录</p>}
+          </div>
+          {showForm && (
+            <div className="bg-slate-800 rounded-2xl p-4 mb-4 space-y-3">
+              <div className="flex gap-2">
+                <button className={"flex-1 py-2 rounded-xl text-sm font-medium " + (form.type === 'expense' ? 'bg-rose-600 text-white' : 'bg-slate-700 text-slate-400')} onClick={() => setForm(f => ({...f, type: 'expense'}))}>支出</button>
+                <button className={"flex-1 py-2 rounded-xl text-sm font-medium " + (form.type === 'income' ? 'bg-green-600 text-white' : 'bg-slate-700 text-slate-400')} onClick={() => setForm(f => ({...f, type: 'income'}))}>收入</button>
+              </div>
+              <input type="number" placeholder="金额" value={form.amount} className="w-full bg-slate-900 rounded-xl px-4 py-3 text-white placeholder-slate-500 outline-none border border-slate-700 focus:border-indigo-500" onChange={e => setForm(f => ({...f, amount: e.target.value}))} />
+              <select value={form.category} className="w-full bg-slate-900 rounded-xl px-4 py-3 text-white outline-none border border-slate-700" onChange={e => setForm(f => ({...f, category: e.target.value}))}>
+                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <input type="text" placeholder="备注（可选）" value={form.note} className="w-full bg-slate-900 rounded-xl px-4 py-3 text-white placeholder-slate-500 outline-none border border-slate-700 focus:border-indigo-500" onChange={e => setForm(f => ({...f, note: e.target.value}))} />
+              <button onClick={addRecord} className="w-full py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition">记录</button>
+            </div>
+          )}
+          <button onClick={() => setShowForm(v => !v)} className="fixed bottom-6 right-6 w-14 h-14 bg-indigo-600 text-white rounded-full text-2xl shadow-xl hover:bg-indigo-700 transition flex items-center justify-center z-10" style={{maxWidth: 'calc(480px - 24px)', right: 'calc(50% - 240px + 12px)'}}>
+            {showForm ? '✕' : '+'}
+          </button>
+        </div>
+      );
+    }
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

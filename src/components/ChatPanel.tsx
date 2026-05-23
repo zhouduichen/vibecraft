@@ -1,11 +1,14 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import SkillSelector from './SkillSelector';
-import DesignCapsule from './DesignCapsule';
+import DesignEnhancementToggle from './DesignEnhancementToggle';
 import TeachFlow from './TeachFlow';
 import type { DesignProfile } from '@/lib/db';
 
+let msgIdCounter = 0;
+
 interface Message {
+  id: number;
   role: 'user' | 'assistant';
   content: string;
   status: 'ok' | 'error';
@@ -26,8 +29,7 @@ const INITIAL_STEP = '正在理解你的需求...';
 
 export default function ChatPanel({
   projectId, templateId, selectedSkills, onCodeUpdate, onStreamStart, onStreamEnd,
-  designProfile,
-  onDesignProfileChange,
+  designProfile, onDesignProfileChange,
 }: ChatPanelProps) {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -44,9 +46,7 @@ export default function ChatPanel({
   }, [messages, isLoading, currentStep]);
 
   useEffect(() => {
-    if (!isLoading && textareaRef.current) {
-      textareaRef.current.focus();
-    }
+    if (!isLoading && textareaRef.current) textareaRef.current.focus();
   }, [isLoading]);
 
   const isValid = input.trim().length >= 5 && !/^[\s\p{P}]+$/u.test(input);
@@ -55,7 +55,7 @@ export default function ChatPanel({
     const val = e.target.value;
     setInput(val);
     if (val.trim().length > 0 && val.trim().length < 5) {
-      setValidationMsg('可以再具体一点吗？比如"把标题改成红色"');
+      setValidationMsg('可以再具体一点吗？');
     } else if (val.trim().length > 0 && /^[\s\p{P}]+$/u.test(val)) {
       setValidationMsg('请输入有意义的描述');
     } else {
@@ -63,10 +63,15 @@ export default function ChatPanel({
     }
   };
 
+  const handleDeleteMessage = useCallback((id: number) => {
+    setMessages(prev => prev.filter(m => m.id !== id));
+  }, []);
+
   const handleSend = async () => {
     if (!isValid || isLoading) return;
     const demand = input.trim();
-    setMessages(prev => [...prev, { role: 'user', content: demand, status: 'ok' }]);
+    const userMsgId = ++msgIdCounter;
+    setMessages(prev => [...prev, { id: userMsgId, role: 'user', content: demand, status: 'ok' }]);
     setInput('');
     setIsLoading(true);
     setCurrentStep(INITIAL_STEP);
@@ -81,7 +86,7 @@ export default function ChatPanel({
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: '请求失败' }));
-        setMessages(prev => [...prev, { role: 'assistant', content: err.error || '请求失败，请重试', status: 'error' }]);
+        setMessages(prev => [...prev, { id: ++msgIdCounter, role: 'assistant', content: err.error || '请求失败，请重试', status: 'error' }]);
         setCurrentStep('');
         setIsLoading(false);
         onStreamEnd();
@@ -90,7 +95,7 @@ export default function ChatPanel({
 
       const body = res.body;
       if (!body) {
-        setMessages(prev => [...prev, { role: 'assistant', content: '服务无响应，请重试', status: 'error' }]);
+        setMessages(prev => [...prev, { id: ++msgIdCounter, role: 'assistant', content: '服务无响应，请重试', status: 'error' }]);
         setCurrentStep('');
         setIsLoading(false);
         onStreamEnd();
@@ -124,42 +129,30 @@ export default function ChatPanel({
               if (data.type === 'step') {
                 setCurrentStep(data.step === 'done' ? '' : data.detail || data.step || '');
                 if (data.step === 'done') {
-                  setMessages(prev => [...prev, { role: 'assistant', content: data.detail || '修改完成，请在右侧预览查看效果', status: 'ok' }]);
+                  setMessages(prev => [...prev, { id: ++msgIdCounter, role: 'assistant', content: data.detail || '修改完成', status: 'ok' }]);
                 }
               } else if (data.type === 'code') {
                 onCodeUpdate(data.content || '');
                 gotCode = true;
               } else if (data.type === 'error') {
                 gotError = true;
-                setMessages(prev => [...prev, { role: 'assistant', content: data.message || '请求失败，请重试', status: 'error' }]);
+                setMessages(prev => [...prev, { id: ++msgIdCounter, role: 'assistant', content: data.message || '请求失败', status: 'error' }]);
                 setCurrentStep('');
               }
-            } catch (err: unknown) {
-              if (!(err instanceof SyntaxError)) console.error('SSE parse error:', err);
-            }
+            } catch {}
           }
         }
       }
 
       if (!gotCode && !gotError) {
-        setMessages(prev => [...prev, { role: 'assistant', content: 'AI 未返回有效结果，请换个说法再试一次', status: 'error' }]);
+        setMessages(prev => [...prev, { id: ++msgIdCounter, role: 'assistant', content: 'AI 未返回有效结果，请换个说法再试一次', status: 'error' }]);
       }
-    } catch (err) {
-      console.error('Chat send failed:', err);
-      setMessages(prev => [...prev, { role: 'assistant', content: '网络异常，请检查连接后重试', status: 'error' }]);
+    } catch {
+      setMessages(prev => [...prev, { id: ++msgIdCounter, role: 'assistant', content: '网络异常，请重试', status: 'error' }]);
     }
     setCurrentStep('');
     setIsLoading(false);
     onStreamEnd();
-    // Auto-sync design profile from DB after each response
-    if (designProfile) {
-      fetch(`/api/projects/${projectId}`)
-        .then(r => r.json())
-        .then(data => {
-          if (data?.design_profile) onDesignProfileChange(data.design_profile);
-        })
-        .catch(() => {});
-    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -168,10 +161,9 @@ export default function ChatPanel({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="px-4 py-3 border-b border-[var(--color-border)] flex items-center gap-2">
-        <div className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--color-accent)' }} />
-        <h2 className="text-[13px] font-medium text-[var(--color-text-secondary)]">对话</h2>
+      <div className="px-4 py-3 border-b flex items-center gap-2" style={{ borderColor: 'var(--color-border)' }}>
+        <div className="w-2 h-2 rounded-full" style={{ background: 'var(--color-accent)' }} />
+        <h2 className="text-[14px] font-medium" style={{ color: 'var(--color-text-muted)' }}>对话</h2>
       </div>
 
       {teachMode ? (
@@ -188,60 +180,59 @@ export default function ChatPanel({
         />
       ) : (
         <>
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin" role="log" aria-live="polite" aria-label="AI 对话">
+          <div className="flex-1 overflow-y-auto p-3 space-y-2.5 scrollbar-thin" role="log" aria-live="polite">
             {messages.length === 0 && !isLoading && (
               <div className="text-center pt-12">
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4"
-                  style={{ background: 'var(--color-accent-subtle)' }}
-                  aria-hidden="true"
-                >
-                  <svg className="w-5 h-5" style={{ color: 'var(--color-accent)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
-                  </svg>
-                </div>
-                <p className="text-[13px] font-medium text-[var(--color-text-primary)]">
-                  告诉我你想怎么改
-                </p>
-                <p className="text-[12px] text-[var(--color-text-muted)] mt-1.5 leading-relaxed max-w-[220px] mx-auto">
-                  试试「把背景色换成浅色」或「在顶部加一个导航栏」
+                <p className="text-[14px] font-medium" style={{ color: 'var(--color-text-primary)' }}>告诉我你想怎么改</p>
+                <p className="text-[12px] mt-1.5 leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+                  试试「把标题变大」或「加个饼图」
                 </p>
               </div>
             )}
 
-            {messages.map((msg, i) => (
-              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-[fadeIn_300ms_ease-out_both]`}>
-                <div
-                  className="max-w-[88%] rounded-[var(--radius-md)] px-3.5 py-2.5 text-[13px] leading-relaxed"
-                  style={
-                    msg.role === 'user'
-                      ? { background: 'var(--color-accent)', color: '#ffffff' }
-                      : msg.status === 'error'
-                        ? { background: 'var(--color-danger-subtle)', color: 'var(--color-danger)' }
-                        : { background: 'var(--color-base)', color: 'var(--color-text-secondary)', border: '1px solid var(--color-border)' }
-                  }
-                >
-                  {msg.content}
+            {messages.map((msg) => (
+              <div key={msg.id} className={`flex group ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`} style={{ animation: 'fadeIn 250ms ease-out both' }}>
+                <div className="relative max-w-[92%]">
+                  <div
+                    className="rounded-lg px-3 py-2 text-[14px] leading-relaxed"
+                    style={
+                      msg.role === 'user'
+                        ? { background: 'var(--color-accent)', color: '#ffffff' }
+                        : msg.status === 'error'
+                          ? { background: 'var(--color-danger-subtle)', color: 'var(--color-danger)' }
+                          : { background: 'var(--color-base)', color: 'var(--color-text-secondary)', border: '1px solid var(--color-border)' }
+                    }
+                  >
+                    {msg.content}
+                  </div>
+                  <button
+                    onClick={() => handleDeleteMessage(msg.id)}
+                    className="absolute -top-1.5 -right-1.5 opacity-0 group-hover:opacity-100 transition-opacity rounded-full flex items-center justify-center"
+                    style={{ width: 20, height: 20, background: 'var(--color-surface)', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)' }}
+                    title="删除消息"
+                  >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
                 </div>
               </div>
             ))}
 
-            {/* Step indicator */}
             {currentStep && (
-              <div className="flex justify-start animate-[fadeIn_200ms_ease-out_both]">
+              <div className="flex" style={{ animation: 'fadeIn 200ms ease-out both' }}>
                 <div
-                  className="max-w-[88%] rounded-[var(--radius-md)] px-3.5 py-2.5 text-[13px] leading-relaxed flex items-center gap-2"
-                  style={{ background: 'var(--color-base)', color: 'var(--color-text-secondary)', border: '1px solid var(--color-border)' }}
+                  className="max-w-[92%] rounded-lg px-3 py-2 text-[14px] flex items-center gap-2"
+                  style={{ background: 'var(--color-base)', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)' }}
                 >
                   {currentStep === INITIAL_STEP ? (
                     <>
-                      <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: 'var(--color-accent)', animationDelay: '0ms' }} />
-                      <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: 'var(--color-accent)', animationDelay: '120ms' }} />
-                      <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: 'var(--color-accent)', animationDelay: '240ms' }} />
+                      <span className="w-2 h-2 rounded-full animate-bounce" style={{ background: 'var(--color-accent)', animationDelay: '0ms' }} />
+                      <span className="w-2 h-2 rounded-full animate-bounce" style={{ background: 'var(--color-accent)', animationDelay: '120ms' }} />
+                      <span className="w-2 h-2 rounded-full animate-bounce" style={{ background: 'var(--color-accent)', animationDelay: '240ms' }} />
                     </>
                   ) : (
-                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--color-accent)' }} />
+                    <span className="w-2 h-2 rounded-full" style={{ background: 'var(--color-accent)' }} />
                   )}
                   <span>{currentStep}</span>
                 </div>
@@ -251,17 +242,12 @@ export default function ChatPanel({
             <div ref={bottomRef} />
           </div>
 
-          <SkillSelector
-            projectId={projectId}
-            templateId={templateId}
-            selectedSkills={activeSkills}
-            onChange={setActiveSkills}
-          />
+          <SkillSelector projectId={projectId} templateId={templateId} selectedSkills={activeSkills} onChange={setActiveSkills} />
 
-          {/* Design enhancement capsule card */}
-          <div className="px-4 pb-3">
-            <DesignCapsule
-              profile={designProfile}
+          <div className="px-3 pb-1">
+            <DesignEnhancementToggle
+              enabled={!!designProfile}
+              hasProfile={!!designProfile}
               onToggle={(next) => {
                 if (next && !designProfile) {
                   setTeachMode(true);
@@ -278,28 +264,33 @@ export default function ChatPanel({
             />
           </div>
 
-          {/* Input area */}
-          <div className="p-3 border-t border-[var(--color-border)]">
+          <div className="p-3 border-t" style={{ borderColor: 'var(--color-border)' }}>
             {validationMsg && (
-              <p className="text-[12px] mb-2" style={{ color: 'var(--color-warning)' }} role="alert">{validationMsg}</p>
+              <p className="text-[12px] mb-1.5" style={{ color: 'var(--color-warning)' }} role="alert">{validationMsg}</p>
             )}
             <div className="flex gap-2">
-              <label htmlFor="chat-input" className="sr-only">描述你想要的功能或改动</label>
               <textarea
-                id="chat-input"
                 ref={textareaRef}
                 value={input}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
-                placeholder="描述你想要的功能或改动..."
+                placeholder="描述改动..."
                 rows={2}
                 disabled={isLoading}
-                className="flex-1 bg-[var(--color-base)] rounded-[var(--radius-md)] px-3.5 py-2.5 text-[13px] text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] border border-[var(--color-border)] focus:border-[var(--color-accent)] focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] focus-visible:outline-offset-2 outline-none resize-none disabled:opacity-50 transition-ui"
+                className="flex-1 rounded-lg px-3 py-2 text-[14px] outline-none resize-none disabled:opacity-50 transition-ui"
+                style={{
+                  background: 'var(--color-base)',
+                  color: 'var(--color-text-primary)',
+                  border: '1px solid var(--color-border)',
+                }}
+                onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-accent)'; }}
+                onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border)'; }}
               />
               <button
                 onClick={handleSend}
                 disabled={!isValid || isLoading}
-                className="px-4 py-2.5 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-[var(--radius-md)] text-[13px] font-medium transition-all duration-200 self-end focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] focus-visible:outline-offset-2 active:scale-[0.97]"
+                className="px-4 py-2 rounded-lg text-[14px] font-medium transition-all duration-200 self-end disabled:opacity-40 active:scale-[0.97]"
+                style={{ background: 'var(--color-accent)', color: '#ffffff' }}
               >
                 {isLoading ? (
                   <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">

@@ -6,6 +6,8 @@ import ChatPanel from '@/components/ChatPanel';
 import VersionTimeline from '@/components/VersionTimeline';
 import ExportMenu from '@/components/ExportMenu';
 import BalanceBar from '@/components/BalanceBar';
+import { useSidebar } from '@/hooks/useSidebar';
+import { TEMPLATE_CATALOG } from '@/lib/templates/catalog';
 import type { Project, DesignProfile } from '@/lib/db';
 
 export default function ProjectEditor({ params }: { params: Promise<{ id: string }> }) {
@@ -17,6 +19,7 @@ export default function ProjectEditor({ params }: { params: Promise<{ id: string
   const [showVersions, setShowVersions] = useState(false);
   const [fetchError, setFetchError] = useState(false);
   const [designProfile, setDesignProfile] = useState<DesignProfile | null>(null);
+  const { toggle } = useSidebar();
 
   useEffect(() => {
     fetch(`/api/projects/${id}`)
@@ -30,13 +33,14 @@ export default function ProjectEditor({ params }: { params: Promise<{ id: string
 
   if (fetchError) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
-        <p className="text-[14px] text-[var(--color-text-secondary)]">加载失败</p>
+      <div className="flex-1 flex flex-col items-center justify-center gap-4">
+        <p className="text-[13px]" style={{ color: 'var(--color-text-muted)' }}>加载失败</p>
         <button
-          onClick={() => router.push('/dashboard')}
-          className="text-[13px] text-[var(--color-accent)] hover:text-[var(--color-accent-hover)] transition-colors"
+          onClick={() => router.push('/')}
+          className="text-[12px] font-medium transition-colors"
+          style={{ color: 'var(--color-accent)' }}
         >
-          ← 返回项目列表
+          ← 返回
         </button>
       </div>
     );
@@ -44,53 +48,54 @@ export default function ProjectEditor({ params }: { params: Promise<{ id: string
 
   if (!project) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-[var(--color-border)] border-t-[var(--color-accent)] rounded-full animate-spin" />
+      <div className="flex-1 flex items-center justify-center">
+        <div className="w-5 h-5 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--color-border)', borderTopColor: 'var(--color-accent)' }} />
       </div>
     );
   }
 
   return (
-    <div className="h-[calc(100vh-3rem)] flex flex-col">
-      {/* Header */}
+    <div className="flex-1 flex flex-col min-h-0">
+      {/* Header bar */}
       <header
-        className="h-12 flex items-center justify-between px-5 shrink-0 border-b relative z-10"
+        className="h-11 flex items-center justify-between px-4 shrink-0 border-b relative z-10"
         style={{ background: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
       >
         <div className="flex items-center gap-3 min-w-0">
+          {/* Mobile menu button */}
           <button
-            onClick={() => router.push('/dashboard')}
-            className="text-[13px] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors shrink-0 flex items-center gap-1"
+            onClick={toggle}
+            className="md:hidden w-7 h-7 flex items-center justify-center rounded-full transition-colors"
+            style={{ color: '#555' }}
+            aria-label="菜单"
           >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              <path d="M3 6h18M3 12h18M3 18h18" />
             </svg>
-            返回
           </button>
-          <span className="w-px h-4" style={{ background: 'var(--color-border)' }} />
-          <div className="flex items-center gap-2 min-w-0">
-            <h1 className="text-[13px] font-semibold text-[var(--color-text-primary)] truncate">
-              {project.name}
-            </h1>
-            <span
-              className="text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0"
-              style={{ background: 'var(--color-accent-subtle)', color: 'var(--color-accent)' }}
-            >
-              {project.template_id === 'ledger' ? '记账' : project.template_id === 'todo' ? 'Todo' : '打卡'}
-            </span>
-          </div>
+          <h1 className="text-[13px] font-semibold truncate" style={{ color: '#111' }}>
+            {project.name}
+          </h1>
+          <span
+            className="text-[9px] px-1.5 py-0.5 rounded-full font-medium shrink-0"
+            style={{ background: 'var(--color-accent-subtle)', color: 'var(--color-accent)' }}
+          >
+            {(() => {
+              const t = TEMPLATE_CATALOG.find(m => m.id === project.template_id);
+              return t?.name ?? project.template_id;
+            })()}
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <BalanceBar />
           <button
             onClick={() => setShowVersions(v => !v)}
             aria-pressed={showVersions}
-            className="text-[12px] px-2.5 py-1.5 rounded-[var(--radius-sm)] font-medium transition-ui focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] focus-visible:outline-offset-2"
-            style={
-              showVersions
-                ? { background: 'var(--color-accent-subtle)', color: 'var(--color-accent)' }
-                : { color: 'var(--color-text-muted)' }
-            }
+            className="text-[11px] px-2.5 py-1 rounded-full font-medium transition-colors"
+            style={{
+              background: showVersions ? 'var(--color-accent-subtle)' : 'transparent',
+              color: showVersions ? 'var(--color-accent)' : 'var(--color-text-muted)',
+            }}
           >
             版本历史
           </button>
@@ -100,10 +105,10 @@ export default function ProjectEditor({ params }: { params: Promise<{ id: string
 
       {/* Body */}
       <div className="flex-1 flex min-h-0">
-        {/* Chat sidebar */}
+        {/* Chat sidebar — slim */}
         <div
-          className="w-[320px] lg:w-[360px] flex flex-col shrink-0 border-r"
-          style={{ background: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+          className="w-[260px] xl:w-[280px] flex flex-col shrink-0 border-r"
+          style={{ background: 'var(--color-surface-raised)', borderColor: 'var(--color-border)' }}
         >
           <ChatPanel
             projectId={id}
@@ -117,7 +122,7 @@ export default function ProjectEditor({ params }: { params: Promise<{ id: string
           />
         </div>
 
-        {/* Preview */}
+        {/* Preview — dominant */}
         <div className="flex-1 flex min-w-0">
           <div className="flex-1">
             <PreviewPane
@@ -130,8 +135,8 @@ export default function ProjectEditor({ params }: { params: Promise<{ id: string
           {/* Version timeline panel */}
           {showVersions && (
             <div
-              className="w-64 overflow-y-auto shrink-0 scrollbar-thin border-l"
-              style={{ background: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+              className="w-60 overflow-y-auto shrink-0 scrollbar-thin border-l"
+              style={{ background: 'var(--color-surface-raised)', borderColor: 'var(--color-border)' }}
             >
               <VersionTimeline projectId={id} onRollback={handleRollback} />
             </div>

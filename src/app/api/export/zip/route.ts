@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import JSZip from 'jszip';
+import { asUuid, validationError } from '@/lib/api/validation';
 
 interface WebAppManifest extends Record<string, unknown> {
   name?: string;
@@ -187,9 +188,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: '请先登录' }, { status: 401 });
   }
 
-  const { projectId } = await req.json() as { projectId?: string };
-  if (!projectId) {
-    return NextResponse.json({ error: '缺少项目 ID' }, { status: 400 });
+  let projectId: string;
+  try {
+    const body = await req.json() as { projectId?: unknown };
+    projectId = asUuid(body.projectId, 'projectId');
+  } catch (err) {
+    return NextResponse.json(validationError(err instanceof Error ? err.message : 'Invalid request'), { status: 400 });
   }
 
   const { data: project } = await db

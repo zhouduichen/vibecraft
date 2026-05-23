@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
+import { makeShareQrDataUrl } from '@/lib/qr';
 
 interface ExportMenuProps {
   projectId: string;
@@ -12,6 +13,7 @@ export default function ExportMenu({ projectId }: ExportMenuProps) {
   const [loading, setLoading] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [published, setPublished] = useState(false);
+  const [hasPublished, setHasPublished] = useState(false);
   const [error, setError] = useState('');
   const menuRef = useRef<HTMLDivElement>(null);
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -83,8 +85,9 @@ export default function ExportMenu({ projectId }: ExportMenuProps) {
       const data = await res.json() as { url?: string };
       if (!data.url) throw new Error('发布链接获取失败');
       setPublishUrl(data.url);
-      setQrUrl(`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(data.url)}`);
+      setQrUrl(await makeShareQrDataUrl(data.url));
       setPublished(true);
+      setHasPublished(true);
     } catch (err: unknown) {
       setError(getErrorMessage(err, '网络异常，请重试'));
     } finally {
@@ -132,6 +135,7 @@ export default function ExportMenu({ projectId }: ExportMenuProps) {
               </div>
 
               <div className="text-center p-3 bg-[var(--color-base)] rounded-[var(--radius-lg)] mb-3">
+                {/* eslint-disable-next-line @next/next/no-img-element -- data URI QR, next/Image can't optimize */}
                 <img src={qrUrl} alt="分享二维码" className="w-32 h-32 mx-auto mb-3 rounded-lg" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                 <div className="flex gap-1.5 mb-3">
                   <label htmlFor="publish-url-input" className="sr-only">分享链接</label>
@@ -189,7 +193,7 @@ export default function ExportMenu({ projectId }: ExportMenuProps) {
                 role="menuitem"
                 className="w-full text-left p-3 rounded-[var(--radius-md)] bg-[var(--color-surface-raised)] hover:bg-[var(--color-border)] transition-ui mb-2 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] focus-visible:outline-offset-2"
               >
-                <p className="text-[13px] font-medium text-[var(--color-text-primary)]">生成分享链接</p>
+                <p className="text-[13px] font-medium text-[var(--color-text-primary)]">{hasPublished ? '更新分享链接' : '生成分享链接'}</p>
                 <p className="text-[12px] text-[var(--color-text-muted)] mt-0.5">
                   发布到线上，链接和二维码即可分享
                 </p>

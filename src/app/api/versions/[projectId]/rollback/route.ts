@@ -14,38 +14,15 @@ export async function POST(
   const { projectId } = await params;
   const { versionId } = await req.json();
 
-  // Verify project ownership first
-  const { data: project } = await db
-    .from('projects')
-    .select('id')
-    .eq('id', projectId)
-    .eq('user_id', session.user.id)
-    .single();
+  const { data, error } = await db.rpc('rollback_project_version', {
+    p_user_id: session.user.id,
+    p_project_id: projectId,
+    p_version_id: versionId,
+  });
 
-  if (!project) {
-    return NextResponse.json({ error: '项目不存在' }, { status: 404 });
+  if (error || typeof data !== 'string') {
+    return NextResponse.json({ error: error?.message || '回滚失败' }, { status: 500 });
   }
 
-  const { data: version } = await db
-    .from('versions')
-    .select('*')
-    .eq('id', versionId)
-    .eq('project_id', projectId)
-    .single();
-
-  if (!version) {
-    return NextResponse.json({ error: '版本不存在' }, { status: 404 });
-  }
-
-  const { error } = await db
-    .from('projects')
-    .update({ current_html: version.html_content, updated_at: new Date().toISOString() })
-    .eq('id', projectId)
-    .eq('user_id', session.user.id);
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ html_content: version.html_content });
+  return NextResponse.json({ html_content: data });
 }

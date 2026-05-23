@@ -1,0 +1,8 @@
+{
+  "name": "Content Calendar",
+  "repo": "https://github.com/tailwindlabs/tailwindcss-showcase",
+  "license": "MIT",
+  "author": "Tailwind Labs",
+  "adapted_at": "2026-05-23",
+  "notes": "Adapted into a single-file VibeCraft template with React, localStorage, and Chinese social media platforms."
+}

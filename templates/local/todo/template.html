@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    .app-container { max-width: 480px; margin: 0 auto; min-height: 100vh; }
+  </style>
+  <title>Todo 提醒</title>
+</head>
+<body class="bg-slate-950">
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+    const STORAGE_KEY = 'vibecraft_todo_data';
+
+    function App() {
+      const [todos, setTodos] = useState(() => {
+        try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+        catch { return []; }
+      });
+      const [input, setInput] = useState('');
+      const [filter, setFilter] = useState('all');
+
+      useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(todos)); }, [todos]);
+
+      const addTodo = () => {
+        if (!input.trim()) return;
+        setTodos(prev => [{ id: Date.now(), text: input.trim(), done: false, createdAt: new Date().toISOString().slice(0, 10) }, ...prev]);
+        setInput('');
+      };
+
+      const toggleTodo = (id) => { setTodos(prev => prev.map(t => t.id === id ? {...t, done: !t.done} : t)); };
+      const deleteTodo = (id) => { setTodos(prev => prev.filter(t => t.id !== id)); };
+
+      const filtered = todos.filter(t => {
+        if (filter === 'active') return !t.done;
+        if (filter === 'done') return t.done;
+        return true;
+      });
+      const activeCount = todos.filter(t => !t.done).length;
+
+      return (
+        <div className="app-container px-4 py-6">
+          <h1 className="text-2xl font-bold text-white mb-1">✅ Todo 提醒</h1>
+          <p className="text-slate-500 text-sm mb-4">{activeCount} 项待完成</p>
+          <div className="flex gap-2 mb-4">
+            <input type="text" placeholder="添加新任务..." value={input} className="flex-1 bg-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-500 outline-none border border-slate-700 focus:border-emerald-500" onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && addTodo()} />
+            <button onClick={addTodo} className="px-5 py-3 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition">添加</button>
+          </div>
+          <div className="flex gap-2 mb-4">
+            {[{key:'all',label:'全部'},{key:'active',label:'进行中'},{key:'done',label:'已完成'}].map(f => (
+              <button key={f.key} className={"px-4 py-1.5 rounded-full text-sm font-medium transition " + (filter === f.key ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400')} onClick={() => setFilter(f.key)}>{f.label}</button>
+            ))}
+          </div>
+          <div className="space-y-2">
+            {filtered.map(t => (
+              <div key={t.id} className="flex items-center gap-3 bg-slate-800 rounded-xl p-3 group">
+                <button onClick={() => toggleTodo(t.id)} className={"w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs transition flex-shrink-0 " + (t.done ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-slate-600 text-transparent hover:border-emerald-500')}>✓</button>
+                <span className={"flex-1 text-sm " + (t.done ? 'text-slate-600 line-through' : 'text-white')}>{t.text}</span>
+                <span className="text-xs text-slate-600">{t.createdAt}</span>
+                <button onClick={() => deleteTodo(t.id)} className="text-slate-600 hover:text-red-400 text-sm opacity-0 group-hover:opacity-100 transition">✕</button>
+              </div>
+            ))}
+            {filtered.length === 0 && <p className="text-center text-slate-600 py-8">暂无任务</p>}
+          </div>
+        </div>
+      );
+    }
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { SKILLS } from '@/config/skills';
+import { asStringArray, asTrimmedString, validationError } from '@/lib/api/validation';
 
 export async function GET(
   req: NextRequest,
@@ -37,13 +39,28 @@ export async function PUT(
 
   const { id } = await params;
   const body = await req.json();
-  const { name, current_html, selected_skills, design_profile } = body;
 
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
-  if (name !== undefined) updates.name = name;
-  if (current_html !== undefined) updates.current_html = current_html;
-  if (selected_skills !== undefined) updates.selected_skills = selected_skills;
-  if (design_profile !== undefined) updates.design_profile = design_profile;
+
+  try {
+    if (body.name !== undefined) {
+      updates.name = asTrimmedString(body.name, 'name', 1, 80);
+    }
+    if (body.current_html !== undefined) {
+      updates.current_html = asTrimmedString(body.current_html, 'current_html', 200, 500000);
+    }
+    if (body.selected_skills !== undefined) {
+      updates.selected_skills = asStringArray(body.selected_skills, 'selected_skills', new Set(Object.keys(SKILLS)));
+    }
+    if (body.design_profile !== undefined) {
+      if (body.design_profile !== null && typeof body.design_profile !== 'object') {
+        return NextResponse.json(validationError('design_profile must be an object or null'), { status: 400 });
+      }
+      updates.design_profile = body.design_profile;
+    }
+  } catch (err) {
+    return NextResponse.json(validationError(err instanceof Error ? err.message : 'Invalid request'), { status: 400 });
+  }
 
   const { data, error } = await db
     .from('projects')

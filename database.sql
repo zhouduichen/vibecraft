@@ -73,6 +73,13 @@ CREATE TABLE IF NOT EXISTS published_apps (
 );
 COMMENT ON TABLE published_apps IS 'Publicly shared apps with unique slug URLs';
 
+ALTER TABLE published_apps ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+ALTER TABLE published_apps ADD COLUMN IF NOT EXISTS revoked_at TIMESTAMPTZ DEFAULT NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_published_apps_project_active
+ON published_apps(project_id)
+WHERE revoked_at IS NULL;
+
 -- Credit transactions (audit trail for billing)
 CREATE TABLE IF NOT EXISTS credit_transactions (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -165,3 +172,37 @@ BEGIN
     );
 END;
 $$ LANGUAGE plpgsql;
+
+-- ── Rollback RPC ─────────────────────────────────────────────
+
+CREATE OR REPLACE FUNCTION rollback_project_version(
+    p_user_id UUID,
+    p_project_id UUID,
+    p_version_id UUID
+) RETURNS TEXT AS $$
+DECLARE
+    v_html TEXT;
+BEGIN
+    PERFORM 1 FROM projects WHERE id = p_project_id AND user_id = p_user_id;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Project does not belong to user';
+    END IF;
+
+    SELECT html_content INTO v_html
+    FROM versions
+    WHERE id = p_version_id AND project_id = p_project_id;
+
+    IF v_html IS NULL THEN
+        RAISE EXCEPTION 'Version not found';
+    END IF;
+
+    UPDATE projects
+    SET current_html = v_html, updated_at = NOW()
+    WHERE id = p_project_id AND user_id = p_user_id;
+
+    INSERT INTO versions (project_id, html_content, message)
+    VALUES (p_project_id, v_html, '回滚到历史版本');
+
+    RETURN v_html;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

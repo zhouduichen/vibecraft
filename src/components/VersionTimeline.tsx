@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 
 interface VersionEntry {
   id: string;
@@ -17,12 +17,16 @@ export default function VersionTimeline({ projectId, onRollback }: VersionTimeli
   const [loading, setLoading] = useState(true);
   const [rollingBack, setRollingBack] = useState<string | null>(null);
 
-  useEffect(() => {
+  const fetchVersions = useCallback(() => {
     fetch(`/api/versions/${projectId}`)
       .then(r => r.json())
       .then(data => { setVersions(data); setLoading(false); })
       .catch(() => setLoading(false));
   }, [projectId]);
+
+  useEffect(() => {
+    fetchVersions();
+  }, [fetchVersions]);
 
   const handleRollback = async (versionId: string) => {
     setRollingBack(versionId);
@@ -32,7 +36,10 @@ export default function VersionTimeline({ projectId, onRollback }: VersionTimeli
       body: JSON.stringify({ versionId }),
     });
     const data = await res.json();
-    if (data.html_content) onRollback(data.html_content);
+    if (data.html_content) {
+      onRollback(data.html_content);
+      fetchVersions();
+    }
     setRollingBack(null);
   };
 

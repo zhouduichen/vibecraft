@@ -1,103 +1,94 @@
 'use client';
-import { useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useTiltCard } from '@/lib/useMouse';
-import type { Template } from '@/config/templates';
+import { useState } from 'react';
+import type { TemplateMeta } from '@/lib/templates/types';
 
-export default function TemplateCard({ template, featured }: { template: Template; featured?: boolean }) {
-  const router = useRouter();
-  const cardRef = useRef<HTMLDivElement>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  useTiltCard(cardRef);
+interface Props {
+  template: TemplateMeta;
+  onPreview: (template: TemplateMeta) => void;
+}
 
-  const handleUse = async () => {
-    if (loading) return;
-    setLoading(true);
-    setError('');
-    try {
-      const res = await fetch('/api/projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ template_id: template.id, name: template.name }),
-      });
-      const data = await res.json();
-      if (data.id) {
-        router.push(`/project/${data.id}`);
-      } else {
-        setError(data.error || '创建失败，请重试');
-      }
-    } catch {
-      setError('网络异常，请检查连接后重试');
-    } finally {
-      setLoading(false);
-    }
-  };
+export default function TemplateCard({ template, onPreview }: Props) {
+  const [imgError, setImgError] = useState(false);
 
   return (
-    <div ref={cardRef} className="tilt-card group">
+    <button
+      onClick={() => onPreview(template)}
+      className="w-full text-left rounded-xl border overflow-hidden transition-all duration-200 hover:-translate-y-px group"
+      style={{
+        background: 'var(--color-surface)',
+        borderColor: 'var(--color-border)',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+      }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-accent)'; }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border)'; }}
+    >
       <div
-        className="tilt-card__inner rounded-[var(--radius-xl)] bg-[var(--color-surface)] border border-[var(--color-border)] hover:border-[var(--color-border-hover)] overflow-hidden cursor-pointer relative"
-        style={{
-          transform: 'rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg))',
-          boxShadow: 'var(--tilt-x, 0) var(--tilt-y, 0) 0 0 transparent',
-        }}
-        onMouseMove={(e) => {
-          const rect = e.currentTarget.getBoundingClientRect();
-          const x = e.clientX - rect.left;
-          const y = e.clientY - rect.top;
-          e.currentTarget.style.setProperty('--glow-x', `${x}px`);
-          e.currentTarget.style.setProperty('--glow-y', `${y}px`);
-        }}
+        className="aspect-[4/3] flex items-center justify-center relative overflow-hidden"
+        style={{ background: 'var(--color-base)' }}
       >
-        {/* Preview area */}
+        {template.cover_url && !imgError ? (
+          // Template covers are local static previews; using a plain img avoids
+          // requiring the Next image optimizer in standalone e2e/prod builds.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={template.cover_url}
+            alt={template.name}
+            className="w-full h-full object-cover"
+            onError={() => setImgError(true)}
+          />
+        ) : (
+          <span className="text-4xl select-none">{template.icon}</span>
+        )}
         <div
-          className={featured ? 'aspect-[16/10]' : 'aspect-[4/3]'}
-          style={{ background: 'var(--color-base)' }}
-        >
-          <div className="w-full h-full flex items-center justify-center relative">
-            <div
-              className="absolute inset-0 opacity-40 transition-opacity duration-300 group-hover:opacity-60"
-              style={{
-                background: 'radial-gradient(circle 300px at var(--glow-x, 50%) var(--glow-y, 50%), rgba(108,114,240,0.12), transparent)',
-              }}
-            />
-            <span className="relative text-6xl select-none">{template.icon}</span>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className={featured ? 'p-5' : 'p-4'}>
-          <div className="flex items-center gap-2 mb-2.5">
-            <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-[var(--color-accent-subtle)] text-[var(--color-accent)] font-medium">
-              {template.category}
+          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+          style={{ background: 'radial-gradient(circle 200px at center, rgba(59,130,246,0.06), transparent)' }}
+        />
+      </div>
+      <div className="p-3.5">
+        <div className="flex items-center gap-2 mb-2">
+          <span
+            className="text-[11px] px-2 py-0.5 rounded-full font-medium"
+            style={{ background: 'var(--color-accent-subtle)', color: 'var(--color-accent)' }}
+          >
+            {template.category}
+          </span>
+          {template.origin?.type === 'open-source' && (
+            <span
+              className="text-[10px] px-2 py-0.5 rounded-full font-medium"
+              style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981' }}
+            >
+              开源模板
             </span>
-          </div>
-          <h2 className={featured ? 'text-lg font-semibold' : 'text-[15px] font-semibold'} style={{ color: 'var(--color-text-primary)' }}>
-            {template.name}
-          </h2>
-          <p className="text-[13px] text-[var(--color-text-secondary)] mt-1 mb-3 leading-relaxed">
-            {template.description}
-          </p>
-          <div className="flex flex-wrap gap-1.5 mb-3.5">
+          )}
+          {template.origin?.license && (
+            <span
+              className="text-[10px] px-1.5 py-0.5 rounded font-medium"
+              style={{ background: 'var(--color-base)', color: 'var(--color-text-muted)' }}
+            >
+              {template.origin.license}
+            </span>
+          )}
+        </div>
+        <h2 className="text-[15px] font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+          {template.name}
+        </h2>
+        <p className="text-[13px] mt-1 leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+          {template.description}
+        </p>
+        {template.tags && template.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-2.5">
             {template.tags.map(tag => (
-              <span key={tag} className="text-[11px] px-2 py-0.5 rounded-md bg-[var(--color-base)] text-[var(--color-text-muted)]">
+              <span
+                key={tag}
+                className="text-[10px] px-1.5 py-0.5 rounded"
+                style={{ background: 'var(--color-base)', color: 'var(--color-text-muted)' }}
+              >
                 {tag}
               </span>
             ))}
           </div>
-          {error && (
-            <p className="text-[12px] text-[var(--color-danger)] mb-2" role="alert">{error}</p>
-          )}
-          <button
-            onClick={handleUse}
-            disabled={loading}
-            className="w-full py-2.5 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-[var(--radius-md)] text-[13px] font-medium transition-all duration-200 focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] focus-visible:outline-offset-2 active:scale-[0.98]"
-          >
-            {loading ? '创建中...' : '从此开始'}
-          </button>
-        </div>
+        )}
       </div>
-    </div>
+    </button>
   );
 }

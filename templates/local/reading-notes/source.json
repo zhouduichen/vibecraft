@@ -1,0 +1,8 @@
+{
+  "name": "Reading Notes Tracker",
+  "repo": "https://github.com/tailwindlabs/tailwindcss-showcase",
+  "license": "MIT",
+  "author": "Tailwind Labs",
+  "adapted_at": "2026-05-23",
+  "notes": "Adapted into a single-file VibeCraft template with React and localStorage persistence."
+}

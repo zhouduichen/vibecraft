@@ -34,7 +34,7 @@ npm run dev
 
 ## 技术栈
 
-- Next.js 14 (App Router)
+- Next.js 16 (App Router)
 - TypeScript
 - Tailwind CSS
 - NextAuth (GitHub OAuth)
@@ -63,4 +63,19 @@ npm run dev
 ALTER TABLE projects ADD COLUMN IF NOT EXISTS design_profile JSONB DEFAULT NULL;
 ```
 
-完整的 schema 见 `docs/supabase-schema.sql`。
+完整的 schema 见 `database.sql`。
+
+## Verification
+
+Use `npm.cmd` on Windows PowerShell if `npm` is blocked by execution policy:
+
+```powershell
+npm.cmd run lint
+npm.cmd run typecheck
+npm.cmd run build
+npm.cmd run test:e2e
+```
+
+## Generated App Security
+
+Generated HTML is treated as untrusted. Preview and template iframes run in a sandbox without `allow-same-origin`; VibeCraft injects a small storage fallback so generated apps do not crash when browser storage is blocked. Published apps should not be used for sensitive data until a dedicated isolated origin is configured.
