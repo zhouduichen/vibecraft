@@ -74,3 +74,28 @@ ${userDemand}
 
 请返回一份 100% 完整的 HTML，包含上述技能功能 + 用户需求的所有改动，可以直接保存为 .html 在浏览器中打开运行。`;
 }
+
+export function buildRepairPrompt(
+  previousHtml: string,
+  failedHtml: string,
+  userDemand: string,
+  errorMessage?: string,
+): string {
+  return `### 之前正常运行的 HTML：
+${previousHtml}
+
+### 上次生成的 HTML（运行出错）：
+${failedHtml}
+
+${errorMessage ? `### 错误信息：\n${errorMessage}\n` : ''}
+
+### 原始用户需求：
+${userDemand}
+
+### 修复要求：
+1. 分析错误原因，修复 bug
+2. 确保所有功能正常，特别是 React state 和 localStorage 读写
+3. 确保所有 CDN script 正确引入
+4. 返回 100% 完整的 HTML，不要省略任何代码
+5. 确保 ReactDOM.createRoot 正确调用，组件正确 export`;
+}
