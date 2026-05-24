@@ -3,6 +3,8 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import SkillSelector from './SkillSelector';
 import DesignEnhancementToggle from './DesignEnhancementToggle';
 import TeachFlow from './TeachFlow';
+import EditableSlotsPanel from './EditableSlotsPanel';
+import { getManifest } from '@/config/manifests';
 import type { DesignProfile } from '@/lib/db';
 
 let msgIdCounter = 0;
@@ -40,6 +42,7 @@ export default function ChatPanel({
   const [currentStep, setCurrentStep] = useState('');
   const [teachMode, setTeachMode] = useState(false);
   const [activeSkills, setActiveSkills] = useState<string[]>(selectedSkills);
+  const manifest = templateId ? getManifest(templateId) : null;
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lastDemandRef = useRef('');
@@ -269,6 +272,23 @@ export default function ChatPanel({
               onReset={() => setTeachMode(true)}
             />
           </div>
+
+          {manifest && manifest.editableSlots.length > 0 && (
+            <EditableSlotsPanel
+              manifestSlots={manifest.editableSlots}
+              onRequestEdit={(slotId, value) => {
+                const slot = manifest.editableSlots.find(s => s.id === slotId);
+                if (slot) {
+                  setInput(`修改「${slot.label}」为：${value}`);
+                  textareaRef.current?.focus();
+                }
+              }}
+              onRequestAiEdit={(prompt) => {
+                setInput(prompt);
+                textareaRef.current?.focus();
+              }}
+            />
+          )}
 
           <div className="p-3 border-t" style={{ borderColor: 'var(--color-border)' }}>
             {validationMsg && (
