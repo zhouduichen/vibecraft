@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { STORAGE_SHIM } from '@/lib/generated/storage-shim';
+import { SLOT_BRIDGE_SCRIPT } from '@/lib/ai/slot-bridge';
 
 interface PreviewPaneProps {
   code: string;
@@ -26,7 +27,9 @@ export default function PreviewPane({ code, onRenderError, onRenderReady, isStre
     setHasError(false);
     setErrorDetail('');
     const spyScript = `<script>window.onerror=function(m,s,l,c,e){var msg=m||'';if(e&&e.stack)msg+='\\n'+String(e.stack).split('\\n').slice(0,3).join('\\n');window.parent.postMessage({type:'RENDER_ERROR',message:msg,source:s||'',line:l||0},'*');return false;};</script>`;
-    const enhanced = code.replace(/<head\b[^>]*>/i, `$&${STORAGE_SHIM}${spyScript}`);
+    const enhanced = code
+      .replace(/<head\b[^>]*>/i, `$&${STORAGE_SHIM}${spyScript}`)
+      .replace('</head>', `${SLOT_BRIDGE_SCRIPT}</head>`);
     iframeRef.current.srcdoc = enhanced;
   }, [code]);
 
