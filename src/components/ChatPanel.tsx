@@ -4,7 +4,10 @@ import SkillSelector from './SkillSelector';
 import DesignEnhancementToggle from './DesignEnhancementToggle';
 import TeachFlow from './TeachFlow';
 import EditableSlotsPanel from './EditableSlotsPanel';
+import SuggestionChips from './SuggestionChips';
 import { getManifest } from '@/config/manifests';
+import { generateSuggestions } from '@/lib/ai/suggestions';
+import type { Suggestion } from '@/config/manifests/types';
 import type { DesignProfile } from '@/lib/db';
 
 let msgIdCounter = 0;
@@ -46,6 +49,7 @@ export default function ChatPanel({
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lastDemandRef = useRef('');
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -54,6 +58,21 @@ export default function ChatPanel({
   useEffect(() => {
     if (!isLoading && textareaRef.current) textareaRef.current.focus();
   }, [isLoading]);
+
+  // Regenerate suggestions when context changes
+  useEffect(() => {
+    const manifest = templateId ? getManifest(templateId) : null;
+    if (manifest && !isLoading) {
+      const ctx = {
+        manifestSuggestions: manifest.defaultSuggestions,
+        activeSkills: activeSkills,
+        hasError: messages.some(m => m.status === 'error'),
+      };
+      setSuggestions(generateSuggestions(ctx));
+    } else {
+      setSuggestions([]);
+    }
+  }, [templateId, activeSkills, messages, isLoading]);
 
   const isValid = input.trim().length >= 5 && !/^[\s\p{P}]+$/u.test(input);
 
@@ -162,6 +181,11 @@ export default function ChatPanel({
     setCurrentStep('');
     setIsLoading(false);
     onStreamEnd();
+  };
+
+  const handleSuggestionSelect = (text: string) => {
+    setInput(text);
+    textareaRef.current?.focus();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -291,6 +315,11 @@ export default function ChatPanel({
           )}
 
           <div className="p-3 border-t" style={{ borderColor: 'var(--color-border)' }}>
+            <SuggestionChips
+              suggestions={suggestions}
+              onSelect={handleSuggestionSelect}
+              loading={isLoading}
+            />
             {validationMsg && (
               <p className="text-[12px] mb-1.5" style={{ color: 'var(--color-warning)' }} role="alert">{validationMsg}</p>
             )}
