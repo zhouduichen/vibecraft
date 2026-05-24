@@ -6,16 +6,6 @@ import { buildSystemPrompt, buildUserPrompt } from '@/lib/prompt';
 import { asStringArray, asTrimmedString, asUuid, validationError } from '@/lib/api/validation';
 import { extractGeneratedHtml } from '@/lib/ai/html';
 
-const CREDITS_PER_REQUEST = 10;
-
-function getMessage(err: unknown): string | undefined {
-  if (err && typeof err === 'object' && 'message' in err) {
-    const message = (err as { message?: unknown }).message;
-    if (typeof message === 'string') return message;
-  }
-  return undefined;
-}
-
 export async function POST(req: NextRequest) {
   // 1. Auth check
   const session = await auth();
@@ -37,18 +27,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(validationError(err instanceof Error ? err.message : '请求内容过短，请描述具体需求'), { status: 400 });
   }
 
-  // 3. Check credits before the expensive AI call
-  const { data: dbUser } = await db
-    .from('users')
-    .select('credits')
-    .eq('id', userId)
-    .single();
-
-  if (!dbUser || dbUser.credits < CREDITS_PER_REQUEST) {
-    return NextResponse.json({ error: '您的算力余额不足，无法完成此次修改' }, { status: 402 });
-  }
-
-  // 4. Get project
+  // 3. Get project
   const { data: project } = await db
     .from('projects')
     .select('current_html, design_profile, template_id')
@@ -60,7 +39,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: '项目不存在' }, { status: 404 });
   }
 
-  // 5. Build prompts
+  // 4. Build prompts
   const designProfile = project.design_profile || null;
   const systemPrompt = buildSystemPrompt(designProfile);
   const userPrompt = buildUserPrompt(
@@ -71,7 +50,7 @@ export async function POST(req: NextRequest) {
     project.template_id
   );
 
-  // 6. Call AI API with streaming
+  // 5. Call AI API with streaming
   const aiBaseUrl = process.env.AI_API_BASE_URL || 'https://api.siliconflow.cn';
   const aiApiKey = process.env.AI_API_KEY;
   const aiModel = process.env.AI_MODEL || 'deepseek-ai/DeepSeek-V3';
@@ -117,7 +96,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: msg }, { status: 502 });
   }
 
-  // 7. Stream response
+  // 6. Stream response
   const body = aiResponse.body;
   if (!body) {
     return NextResponse.json({ error: 'AI 服务响应异常' }, { status: 502 });
@@ -195,34 +174,26 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // 8. Extract final code and persist
+      // 7. Extract final code and save as draft
       const cleanCode = extractGeneratedHtml(fullResponse);
 
       if (cleanCode) {
-        sendStep('saving', '正在保存修改...');
-        let saved = false;
-        try {
-          const { error: saveError } = await db.rpc('chat_send_transaction', {
-            p_user_id: userId,
-            p_project_id: projectId,
-            p_new_html: cleanCode,
-            p_message: userDemand,
-            p_cost: CREDITS_PER_REQUEST,
-          });
-          if (saveError) throw saveError;
-          saved = true;
-        } catch (err: unknown) {
-          console.error('Failed to save project:', err);
-          const message = getMessage(err);
-          const msg = message?.includes('Insufficient credits')
-            ? '您的算力余额不足，无法完成此次修改'
-            : '保存失败，请稍后重试';
+        sendStep('saving', '正在生成预览...');
+
+        // Save as draft only — don't deduct credits yet
+        const { error: draftError } = await db
+          .from('projects')
+          .update({ draft_html: cleanCode })
+          .eq('id', projectId)
+          .eq('user_id', userId);
+
+        if (draftError) {
+          console.error('Failed to save draft:', draftError);
           controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify({ type: 'error', message: msg })}\n\n`)
+            encoder.encode(`data: ${JSON.stringify({ type: 'error', message: '保存草稿失败，请重试' })}\n\n`)
           );
-        }
-        if (saved) {
-          sendStep('done', '修改完成，请在右侧预览查看效果');
+        } else {
+          sendStep('draft_ready', '代码已生成，正在验证...');
           controller.enqueue(
             encoder.encode(`data: ${JSON.stringify({ type: 'code', content: cleanCode })}\n\n`)
           );
