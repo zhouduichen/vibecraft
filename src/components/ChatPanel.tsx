@@ -23,13 +23,15 @@ interface ChatPanelProps {
   onStreamEnd: () => void;
   designProfile: DesignProfile | null;
   onDesignProfileChange: (profile: DesignProfile | null) => void;
+  onDraftReady: (code: string, demand: string) => void;
+  onDraftError: (errorMessage: string) => void;
 }
 
 const INITIAL_STEP = '正在理解你的需求...';
 
 export default function ChatPanel({
   projectId, templateId, selectedSkills, onCodeUpdate, onStreamStart, onStreamEnd,
-  designProfile, onDesignProfileChange,
+  designProfile, onDesignProfileChange, onDraftReady, onDraftError,
 }: ChatPanelProps) {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -40,6 +42,7 @@ export default function ChatPanel({
   const [activeSkills, setActiveSkills] = useState<string[]>(selectedSkills);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const lastDemandRef = useRef('');
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -70,6 +73,7 @@ export default function ChatPanel({
   const handleSend = async () => {
     if (!isValid || isLoading) return;
     const demand = input.trim();
+    lastDemandRef.current = demand;
     const userMsgId = ++msgIdCounter;
     setMessages(prev => [...prev, { id: userMsgId, role: 'user', content: demand, status: 'ok' }]);
     setInput('');
@@ -133,9 +137,11 @@ export default function ChatPanel({
                 }
               } else if (data.type === 'code') {
                 onCodeUpdate(data.content || '');
+                onDraftReady(data.content || '', lastDemandRef.current);
                 gotCode = true;
               } else if (data.type === 'error') {
                 gotError = true;
+                onDraftError(data.message || '');
                 setMessages(prev => [...prev, { id: ++msgIdCounter, role: 'assistant', content: data.message || '请求失败', status: 'error' }]);
                 setCurrentStep('');
               }

@@ -21,6 +21,10 @@ export default function ProjectEditor({ params }: { params: Promise<{ id: string
   const [designProfile, setDesignProfile] = useState<DesignProfile | null>(null);
   const { toggle } = useSidebar();
 
+  // Draft-commit state
+  const [draftCode, setDraftCode] = useState<string | null>(null);
+  const [lastDemand, setLastDemand] = useState('');
+
   useEffect(() => {
     fetch(`/api/projects/${id}`)
       .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
@@ -30,6 +34,56 @@ export default function ProjectEditor({ params }: { params: Promise<{ id: string
 
   const handleCodeUpdate = useCallback((code: string) => { setCurrentCode(code); }, []);
   const handleRollback = useCallback((code: string) => { setCurrentCode(code); }, []);
+
+  // Called by ChatPanel when new draft is ready
+  const handleDraftReady = useCallback((code: string, demand: string) => {
+    setDraftCode(code);
+    setLastDemand(demand);
+  }, []);
+
+  // Called by PreviewPane when iframe renders successfully
+  const handleRenderReady = useCallback(async () => {
+    if (!draftCode) return;
+    try {
+      const res = await fetch('/api/chat/commit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId: id }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        console.error('Commit failed:', err.error);
+      }
+    } catch (e) {
+      console.error('Commit error:', e);
+    }
+    setDraftCode(null);
+    setLastDemand('');
+  }, [draftCode, id]);
+
+  // Called by PreviewPane when iframe errors
+  const handleRenderError = useCallback(async () => {
+    if (!draftCode || !lastDemand) return;
+    try {
+      const res = await fetch('/api/chat/repair', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId: id,
+          failedHtml: draftCode,
+          userDemand: lastDemand,
+          attemptCount: 0,
+        }),
+      });
+      const data = await res.json();
+      if (data.repairedCode) {
+        setCurrentCode(data.repairedCode);
+        setDraftCode(data.repairedCode);
+      }
+    } catch (e) {
+      console.error('Repair error:', e);
+    }
+  }, [draftCode, lastDemand, id]);
 
   if (fetchError) {
     return (
@@ -119,6 +173,8 @@ export default function ProjectEditor({ params }: { params: Promise<{ id: string
             onCodeUpdate={handleCodeUpdate}
             onStreamStart={() => setIsStreaming(true)}
             onStreamEnd={() => setIsStreaming(false)}
+            onDraftReady={handleDraftReady}
+            onDraftError={handleRenderError}
           />
         </div>
 
@@ -127,7 +183,8 @@ export default function ProjectEditor({ params }: { params: Promise<{ id: string
           <div className="flex-1">
             <PreviewPane
               code={currentCode}
-              onRenderError={() => {}}
+              onRenderError={handleRenderError}
+              onRenderReady={handleRenderReady}
               isStreaming={isStreaming}
             />
           </div>
