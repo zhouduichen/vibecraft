@@ -5,17 +5,20 @@ import { STORAGE_SHIM } from '@/lib/generated/storage-shim';
 interface PreviewPaneProps {
   code: string;
   onRenderError: () => void;
+  onRenderReady?: () => void;
   isStreaming: boolean;
 }
 
-export default function PreviewPane({ code, onRenderError, isStreaming }: PreviewPaneProps) {
+export default function PreviewPane({ code, onRenderError, onRenderReady, isStreaming }: PreviewPaneProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [hasError, setHasError] = useState(false);
   const [errorDetail, setErrorDetail] = useState('');
   const onRenderErrorRef = useRef(onRenderError);
+  const onRenderReadyRef = useRef(onRenderReady);
   const errorFlagRef = useRef(false);
 
   useEffect(() => { onRenderErrorRef.current = onRenderError; }, [onRenderError]);
+  useEffect(() => { onRenderReadyRef.current = onRenderReady; }, [onRenderReady]);
 
   useEffect(() => {
     if (!iframeRef.current || !code) return;
@@ -35,6 +38,9 @@ export default function PreviewPane({ code, onRenderError, isStreaming }: Previe
         setHasError(true);
         setErrorDetail(event.data.message || '未知错误');
         onRenderErrorRef.current();
+      }
+      if (event.data?.type === 'RENDER_READY') {
+        onRenderReadyRef.current?.();
       }
     };
     window.addEventListener('message', handler);
