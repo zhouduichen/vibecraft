@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { SKILLS } from '@/config/skills';
+import { validateGeneratedHtml } from '@/lib/ai/validate';
 
 const CREDITS_PER_COMMIT = 10;
 
@@ -31,6 +33,36 @@ export async function POST(req: NextRequest) {
 
   if (!project.draft_html) {
     return NextResponse.json({ error: '没有待提交的草稿' }, { status: 400 });
+  }
+
+  // Get project's selected_skills for validation
+  const { data: projectFull, error: projectError } = await db
+    .from('projects')
+    .select('selected_skills')
+    .eq('id', projectId)
+    .eq('user_id', userId)
+    .single();
+
+  if (projectError || !projectFull) {
+    return NextResponse.json({ error: '项目不存在' }, { status: 404 });
+  }
+
+  // Validate generated HTML against active skills
+  const activeSkills = (projectFull.selected_skills || [])
+    .map((id: string) => SKILLS[id])
+    .filter(Boolean);
+
+  const validationResults = validateGeneratedHtml(project.draft_html, activeSkills);
+  const failures = validationResults.filter(r => !r.passed);
+
+  if (failures.length > 0) {
+    return NextResponse.json({
+      error: '技能验证未通过',
+      validationFailures: failures.map(f => ({
+        skillId: f.skillId,
+        message: f.message,
+      })),
+    }, { status: 422 });
   }
 
   // Use RPC for atomic commit: check credits, deduct, save, create version
