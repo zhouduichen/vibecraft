@@ -47,4 +47,9 @@ export interface DesignProfile {
   bodyFontSize: number;
   lineHeight: number;
   density: 'sparse' | 'moderate';
+
+  // Design v2
+  styleLocked?: boolean;
+  templateBound?: string;
+  intentMode?: 'visual_only' | 'functional' | 'both';
 }
