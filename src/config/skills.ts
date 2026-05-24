@@ -1,9 +1,21 @@
+export interface ValidationRule {
+  type: 'script_exists' | 'canvas_exists' | 'element_exists' | 'state_field_exists';
+  selector?: string;
+  target?: string;
+  message: string;
+}
+
 export interface Skill {
   id: string;
   name: string;
   description: string;
+  category: 'chart' | 'export' | 'alert' | 'optimize' | 'share';
   prompt: string;
   compatibleTemplates: string[];
+  requiredScripts: { url: string; globalVar: string }[];
+  dataRequirements: string[];
+  conflicts: string[];
+  validationRules: ValidationRule[];
 }
 
 export const SKILLS: Record<string, Skill> = {
@@ -11,6 +23,7 @@ export const SKILLS: Record<string, Skill> = {
     id: 'chart',
     name: '消费图表',
     description: '饼图和月度趋势折线图',
+    category: 'chart',
     prompt: `【必须实现：消费图表】
 
 1. 在 <head> 中新增 Chart.js CDN：
@@ -27,11 +40,21 @@ export const SKILLS: Record<string, Skill> = {
    - 圆角曲线 tension: 0.3
    - 饼图使用 Canvas 渲染不要 SVG`,
     compatibleTemplates: ['ledger', 'checkin', '*'],
+    requiredScripts: [
+      { url: 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js', globalVar: 'Chart' },
+    ],
+    dataRequirements: ['records'],
+    conflicts: [],
+    validationRules: [
+      { type: 'script_exists', target: 'chart.js@4.4.0', message: 'Chart.js CDN 未正确引入' },
+      { type: 'canvas_exists', message: '缺少 <canvas> 元素来渲染图表' },
+    ],
   },
   export_excel: {
     id: 'export_excel',
     name: '导出 Excel',
     description: '将数据导出为 Excel 文件',
+    category: 'export',
     prompt: `【必须实现：导出 Excel】
 
 1. 在 <head> 中新增 SheetJS CDN（放在其他 <script> 之前）：
@@ -49,11 +72,20 @@ export const SKILLS: Record<string, Skill> = {
 
 4. 注意：XLSX 挂在 window 上，在 Babel JSX 中直接用 XLSX（全局变量），不需要 import。`,
     compatibleTemplates: ['ledger', 'checkin', 'todo', '*'],
+    requiredScripts: [
+      { url: 'https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js', globalVar: 'XLSX' },
+    ],
+    dataRequirements: ['records'],
+    conflicts: [],
+    validationRules: [
+      { type: 'script_exists', target: 'xlsx.full.min.js', message: 'SheetJS CDN 未正确引入' },
+    ],
   },
   budget_alert: {
     id: 'budget_alert',
     name: '超支弹窗',
     description: '超出预算时弹出警告',
+    category: 'alert',
     prompt: `【必须实现：超支预警】
 
 1. 在 React state 中新增一个 budget 字段，默认值为一个分类预算对象，如：
@@ -69,5 +101,11 @@ export const SKILLS: Record<string, Skill> = {
 
 4. 警告条用内联方式展示，不要用浏览器 alert() 弹窗。`,
     compatibleTemplates: ['ledger'],
+    requiredScripts: [],
+    dataRequirements: ['records'],
+    conflicts: [],
+    validationRules: [
+      { type: 'state_field_exists', target: 'budget', message: '缺少 budget 状态字段' },
+    ],
   },
 };
