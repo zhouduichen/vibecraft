@@ -2,6 +2,7 @@
 import type { Skill } from '@/config/skills';
 import type { DesignProfile } from './db';
 import { mapProfileToPromptText } from '@/config/design/mapper';
+import { getManifest } from '@/config/manifests';
 
 export function buildSystemPrompt(designProfile?: DesignProfile | null): string {
   const base = `你是一个精通单文件 Web 应用的 React 专家。
@@ -44,7 +45,8 @@ export function buildUserPrompt(
   currentHtml: string,
   userDemand: string,
   selectedSkills: string[],
-  skillsMap: Record<string, Skill>
+  skillsMap: Record<string, Skill>,
+  templateId?: string,
 ): string {
   const skillPrompts = selectedSkills
     .map(id => skillsMap[id]?.prompt)
@@ -55,10 +57,17 @@ export function buildUserPrompt(
     ? `### 必须叠加的技能功能（最高优先级）：\n${skillPrompts}\n\n上述技能功能必须全部实现，不可遗漏。仔细阅读当前源码中的 state 字段名、数据结构和组件层级，确保新增功能与现有代码无缝集成。`
     : '';
 
+  const manifest = templateId ? getManifest(templateId) : null;
+  const slotSection = manifest?.editableSlots?.length
+    ? `\n\n### 可改区域声明（请严格遵循）：\n${manifest.editableSlots.map(
+        s => `- slot "${s.id}"（${s.label}）：${s.aiPrompt}`
+      ).join('\n')}\n\n重要：请在上述每个 slot 对应的 HTML 元素上添加 data-vibecraft-slot 属性，属性值为 slot 的 id。不要遗漏。`
+    : '';
+
   return `### 当前运行的完整 React CDN 源码：
 ${currentHtml}
 
-${skillSection}
+${skillSection}${slotSection}
 
 ### 用户需求：
 ${userDemand}

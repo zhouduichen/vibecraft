@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
   // 4. Get project
   const { data: project } = await db
     .from('projects')
-    .select('current_html, design_profile')
+    .select('current_html, design_profile, template_id')
     .eq('id', projectId)
     .eq('user_id', userId)
     .single();
@@ -67,7 +67,8 @@ export async function POST(req: NextRequest) {
     project.current_html,
     userDemand,
     selectedSkills,
-    SKILLS
+    SKILLS,
+    project.template_id
   );
 
   // 6. Call AI API with streaming
