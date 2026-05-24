@@ -4,7 +4,10 @@ import type { DesignProfile } from './db';
 import { mapProfileToPromptText } from '@/config/design/mapper';
 import { getManifest } from '@/config/manifests';
 
-export function buildSystemPrompt(designProfile?: DesignProfile | null): string {
+export function buildSystemPrompt(
+  designProfile?: DesignProfile | null,
+  templateId?: string,
+): string {
   const base = `你是一个精通单文件 Web 应用的 React 专家。
 当前应用通过 CDN 引入了 React（UMD 方式）和 Tailwind CSS。你的所有逻辑、状态、UI 必须写在同一个文件的 <script type="text/babel"> 块中。
 数据必须使用 React.useState 维护，并通过 localStorage 持久化；所有 localStorage.getItem/setItem 必须包在 try/catch 中，避免沙箱或隐私模式下抛错导致白屏。
@@ -34,11 +37,45 @@ Skill 要求"导出数据"时，你必须用实际的 state 字段名来映射�
 【输出格式】
 只返回 \`\`\`html ... \`\`\` 包裹的完整代码，不要带有任何多余的 Markdown 解释。`;
 
+  let result = base;
+
   if (designProfile) {
-    return base + '\n\n' + mapProfileToPromptText(designProfile);
+    result += '\n\n' + mapProfileToPromptText(designProfile);
+
+    // Style lock: prevent AI from changing visual style
+    if (designProfile.styleLocked) {
+      result += '\n\n【风格锁定】用户已锁定当前视觉风格。严禁修改整体配色方案、字体、圆角、间距和动效参数。只做功能层面的改动。';
+    }
+
+    // Intent mode: restrict scope of changes
+    if (designProfile.intentMode === 'visual_only') {
+      result += '\n\n【本次修改范围】仅限视觉调整，不新增功能、不改数据结构。';
+    } else if (designProfile.intentMode === 'functional') {
+      result += '\n\n【本次修改范围】仅限功能改动，保持现有视觉风格不变。';
+    }
+
+    // Template design bounds
+    if (templateId) {
+      const manifest = getManifest(templateId);
+      if (manifest?.designBounds) {
+        const bounds = manifest.designBounds;
+        const boundsLines: string[] = [];
+        if (bounds.allowedThemes.length) {
+          boundsLines.push(`允许的主题: ${bounds.allowedThemes.join(', ')}`);
+        }
+        if (bounds.allowedColorStrategies.length) {
+          boundsLines.push(`允许的色彩策略: ${bounds.allowedColorStrategies.join(', ')}`);
+        }
+        boundsLines.push(`圆角范围: ${bounds.minBorderRadius}-${bounds.maxBorderRadius}px`);
+        if (bounds.allowedMotion.length) {
+          boundsLines.push(`允许的动效: ${bounds.allowedMotion.join(', ')}`);
+        }
+        result += `\n\n【模板设计边界】\n${boundsLines.join('\n')}\n请勿超出上述边界。`;
+      }
+    }
   }
 
-  return base;
+  return result;
 }
 
 export function buildUserPrompt(

@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
   // Get project for design profile
   const { data: project } = await db
     .from('projects')
-    .select('design_profile, current_html')
+    .select('design_profile, current_html, template_id')
     .eq('id', body.projectId)
     .eq('user_id', userId)
     .single();
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Build repair prompt
-  const systemPrompt = buildSystemPrompt(project.design_profile || null);
+  const systemPrompt = buildSystemPrompt(project.design_profile || null, project.template_id);
   const repairPrompt = buildRepairPrompt(
     body.previousHtml || project.current_html,
     body.failedHtml,

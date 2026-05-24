@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
 
   // 4. Build prompts
   const designProfile = project.design_profile || null;
-  const systemPrompt = buildSystemPrompt(designProfile);
+  const systemPrompt = buildSystemPrompt(designProfile, project.template_id);
   const userPrompt = buildUserPrompt(
     project.current_html,
     userDemand,
