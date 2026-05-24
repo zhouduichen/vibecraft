@@ -2,6 +2,7 @@
 import type { DesignProfile } from '@/lib/db';
 import type { TeachAnswer } from './questions';
 import { RECIPES } from './recipes';
+import type { DesignBound } from '@/config/manifests/types';
 
 /**
  * Maps collected Teach answers to a concrete DesignProfile.
@@ -75,4 +76,28 @@ export function mapProfileToPromptText(profile: DesignProfile): string {
 - 不要把所有东西都包在容器里
 - 每个词都要有存在的理由，不重复标题内容
 - 不用 em dash（—），用逗号、冒号、句号代替`;
+}
+
+export function validateProfileAgainstBounds(
+  profile: DesignProfile,
+  bounds?: DesignBound | null,
+): string[] {
+  if (!bounds) return [];
+
+  const warnings: string[] = [];
+
+  if (bounds.allowedThemes.length && !bounds.allowedThemes.includes(profile.theme)) {
+    warnings.push(`主题模式 ${profile.theme} 不在模板允许范围内`);
+  }
+  if (bounds.allowedColorStrategies.length && !bounds.allowedColorStrategies.includes(profile.colorStrategy)) {
+    warnings.push(`色彩策略 ${profile.colorStrategy} 不在模板允许范围内`);
+  }
+  if (profile.borderRadius < bounds.minBorderRadius || profile.borderRadius > bounds.maxBorderRadius) {
+    warnings.push(`圆角 ${profile.borderRadius}px 超出模板允许范围 (${bounds.minBorderRadius}-${bounds.maxBorderRadius})`);
+  }
+  if (bounds.allowedMotion.length && !bounds.allowedMotion.includes(profile.motion)) {
+    warnings.push(`动效 ${profile.motion} 不在模板允许范围内`);
+  }
+
+  return warnings;
 }
