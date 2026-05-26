@@ -28,7 +28,6 @@ export default function Home() {
       .catch(() => {});
   };
 
-  // Fetch projects when dialog opens
   useEffect(() => {
     if (!dialogOpen) return;
     fetchProjects();
@@ -140,7 +139,6 @@ export default function Home() {
 
       {/* Center - creation area */}
       <div className="flex-1 flex flex-col items-center justify-center px-6">
-        {/* Greeting */}
         <h1
           className="entrance-greet text-center leading-tight tracking-tight"
           style={{
@@ -154,7 +152,6 @@ export default function Home() {
           想做点什么？
         </h1>
 
-        {/* Pill input with particle shell */}
         <PillParticleShell className="entrance-input w-full flex justify-center">
           <div
             className="flex items-center rounded-full animate-input-breathe"
@@ -199,23 +196,23 @@ export default function Home() {
       {/* Projects dialog */}
       {dialogOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => setDialogOpen(false)}
           />
-          {/* Dialog */}
           <div
-            className="relative w-full max-w-3xl max-h-[80vh] rounded-2xl grid overflow-hidden"
+            className="relative w-full max-w-3xl rounded-2xl overflow-hidden flex flex-col"
             style={{
-              gridTemplateRows: 'auto 1fr',
+              maxHeight: '80vh',
               background: 'var(--sidebar-bg)',
               border: '1px solid var(--color-border)',
               boxShadow: '0 25px 60px rgba(0,0,0,0.3)',
             }}
           >
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ borderBottom: '1px solid var(--color-border)' }}>
+            <div
+              className="flex items-center justify-between px-5 py-3.5 shrink-0"
+              style={{ borderBottom: '1px solid var(--color-border)' }}
+            >
               <h2 className="text-[15px] font-semibold" style={{ color: 'var(--color-text-primary)' }}>
                 我的作品
               </h2>
@@ -230,8 +227,10 @@ export default function Home() {
                 </svg>
               </button>
             </div>
-            {/* Body */}
-            <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4">
+            <div
+              className="flex-1 overflow-y-auto overscroll-contain px-5 py-4"
+              style={{ minHeight: 0 }}
+            >
               {projects.length === 0 ? (
                 <p className="text-center text-[14px] py-12" style={{ color: 'var(--color-text-muted)' }}>
                   还没有作品，在输入框中描述你的想法开始创作

@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Project } from '@/lib/db';
 
@@ -17,6 +17,21 @@ export default function ProjectCard({ project, onUpdate }: ProjectCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
   const [renderedAt] = useState(() => Date.now());
+  const menuRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+
+  // Close menu on outside click
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [menuOpen]);
 
   const handleAction = async (action: string) => {
     setLoading(action);
@@ -95,7 +110,7 @@ export default function ProjectCard({ project, onUpdate }: ProjectCardProps) {
       onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border)'; }}
     >
       {/* Thumbnail */}
-      <div className="aspect-[4/3] flex items-center justify-center relative overflow-hidden" style={{ background: 'var(--color-base)' }}>
+      <div className="aspect-[4/3] relative overflow-hidden" style={{ background: 'var(--color-base)' }}>
         {project.thumbnail_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={project.thumbnail_url} alt={project.name} className="w-full h-full object-cover" />
@@ -104,10 +119,16 @@ export default function ProjectCard({ project, onUpdate }: ProjectCardProps) {
             srcDoc={project.current_html}
             title={project.name}
             sandbox=""
-            className="w-full h-full border-0 pointer-events-none select-none"
+            className="absolute top-0 left-0 border-0 pointer-events-none select-none"
+            style={{
+              width: '300%',
+              height: '300%',
+              transform: 'scale(0.3334)',
+              transformOrigin: 'top left',
+            }}
           />
         ) : (
-          <span className="text-3xl select-none opacity-20">◻</span>
+          <span className="absolute inset-0 flex items-center justify-center text-3xl select-none opacity-20">◻</span>
         )}
         {/* Status badges */}
         <div className="absolute top-2 left-2 flex gap-1 flex-wrap">
@@ -151,11 +172,19 @@ export default function ProjectCard({ project, onUpdate }: ProjectCardProps) {
               </p>
             )}
           </div>
-          {/* Menu button */}
-          <div className="relative shrink-0" onClick={e => e.stopPropagation()}>
+          {/* Menu button — always visible */}
+          <div className="relative shrink-0" ref={menuRef} onClick={e => e.stopPropagation()}>
             <button
-              onClick={e => { e.stopPropagation(); setMenuOpen(v => !v); }}
-              className="w-7 h-7 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[var(--color-border)]"
+              ref={btnRef}
+              onClick={e => {
+                e.stopPropagation();
+                const rect = btnRef.current?.getBoundingClientRect();
+                if (rect) {
+                  setMenuPos({ top: rect.bottom + 4, left: rect.right - 144 });
+                }
+                setMenuOpen(v => !v);
+              }}
+              className="w-7 h-7 flex items-center justify-center rounded-full transition-colors hover:bg-[var(--color-border)]"
               style={{ color: 'var(--color-text-muted)' }}
               aria-label="更多操作"
             >
@@ -167,8 +196,14 @@ export default function ProjectCard({ project, onUpdate }: ProjectCardProps) {
             </button>
             {menuOpen && (
               <div
-                className="absolute right-0 top-full mt-1 w-36 py-1 rounded-lg border z-50 shadow-lg"
-                style={{ background: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+                className="fixed w-36 py-1 rounded-lg border shadow-lg"
+                style={{
+                  top: menuPos.top,
+                  left: menuPos.left,
+                  background: 'var(--color-surface)',
+                  borderColor: 'var(--color-border)',
+                  zIndex: 100,
+                }}
               >
                 {[
                   { key: 'duplicate', label: '复制项目' },
