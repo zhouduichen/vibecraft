@@ -1,11 +1,40 @@
 'use client';
-import { useSession } from 'next-auth/react';
+import { useState, useEffect, useCallback } from 'react';
 
 const MAX_CREDITS = 1000;
 
 export default function BalanceBar() {
-  const { data: session } = useSession();
-  const credits = session?.credits ?? MAX_CREDITS;
+  const [credits, setCredits] = useState<number | null>(null);
+
+  const fetchCredits = useCallback(async () => {
+    try {
+      const res = await fetch('/api/credits');
+      if (res.ok) {
+        const data = await res.json() as { credits: number };
+        setCredits(data.credits);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  // Fetch on mount and listen for refresh events
+  useEffect(() => {
+    const timer = window.setTimeout(fetchCredits, 0);
+    const handler = () => fetchCredits();
+    window.addEventListener('balance:refresh', handler);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener('balance:refresh', handler);
+    };
+  }, [fetchCredits]);
+
+  // Also periodically refresh to stay in sync
+  useEffect(() => {
+    const interval = setInterval(fetchCredits, 30_000);
+    return () => clearInterval(interval);
+  }, [fetchCredits]);
+
+  if (credits === null) return null;
+
   const pct = Math.min(100, (credits / MAX_CREDITS) * 100);
   const isLow = pct < 10;
 

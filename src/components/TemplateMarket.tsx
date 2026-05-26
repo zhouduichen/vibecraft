@@ -39,7 +39,7 @@ export default function TemplateMarket() {
       const res = await fetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ template_id: template.id, name: template.name }),
+        body: JSON.stringify({ template_id: template.id, name: template.name, description: template.description }),
       });
       const data = await res.json();
       if (data.id) router.push(`/project/${data.id}`);

@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import SkillSelector from './SkillSelector';
 import DesignEnhancementToggle from './DesignEnhancementToggle';
 import TeachFlow from './TeachFlow';
@@ -29,7 +29,7 @@ interface ChatPanelProps {
   designProfile: DesignProfile | null;
   onDesignProfileChange: (profile: DesignProfile | null) => void;
   onDraftReady: (code: string, demand: string) => void;
-  onDraftError: (errorMessage: string) => void;
+  onDraftError: (errorMessage?: string) => void;
 }
 
 const INITIAL_STEP = '正在理解你的需求...';
@@ -49,7 +49,19 @@ export default function ChatPanel({
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lastDemandRef = useRef('');
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [starterPrompts, setStarterPrompts] = useState<string[]>([]);
+  const [isNewUser, setIsNewUser] = useState(true);
+
+  // Fetch onboarding state
+  useEffect(() => {
+    fetch(`/api/onboarding?projectId=${projectId}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.starterPrompts) setStarterPrompts(data.starterPrompts);
+        setIsNewUser(data.isNewUser !== false);
+      })
+      .catch(() => {});
+  }, [projectId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -59,8 +71,10 @@ export default function ChatPanel({
     if (!isLoading && textareaRef.current) textareaRef.current.focus();
   }, [isLoading]);
 
-  // Regenerate suggestions when context changes
-  useEffect(() => {
+  const suggestions = useMemo<Suggestion[]>(() => {
+    if (isNewUser && starterPrompts.length > 0) {
+      return starterPrompts.map((p) => ({ text: p, category: 'content' as const }));
+    }
     const manifest = templateId ? getManifest(templateId) : null;
     if (manifest && !isLoading) {
       const ctx = {
@@ -68,11 +82,10 @@ export default function ChatPanel({
         activeSkills: activeSkills,
         hasError: messages.some(m => m.status === 'error'),
       };
-      setSuggestions(generateSuggestions(ctx));
-    } else {
-      setSuggestions([]);
+      return generateSuggestions(ctx);
     }
-  }, [templateId, activeSkills, messages, isLoading]);
+    return [];
+  }, [templateId, activeSkills, messages, isLoading, isNewUser, starterPrompts]);
 
   const isValid = input.trim().length >= 5 && !/^[\s\p{P}]+$/u.test(input);
 
@@ -116,6 +129,7 @@ export default function ChatPanel({
         setCurrentStep('');
         setIsLoading(false);
         onStreamEnd();
+        if (res.status === 402) window.dispatchEvent(new CustomEvent('balance:refresh'));
         return;
       }
 
@@ -274,6 +288,18 @@ export default function ChatPanel({
 
             <div ref={bottomRef} />
           </div>
+
+          {/* First-time welcome hint */}
+          {isNewUser && messages.length === 0 && !isLoading && starterPrompts.length > 0 && (
+            <div className="px-3 pb-1">
+              <div
+                className="text-[11px] px-3 py-2 rounded-lg leading-relaxed"
+                style={{ background: 'var(--color-accent-subtle)', color: 'var(--color-text-secondary)' }}
+              >
+                从下面的建议选一个开始，或者直接在输入框描述你想要的功能。你可以随时切换技能和设计风格。
+              </div>
+            </div>
+          )}
 
           <SkillSelector projectId={projectId} templateId={templateId} selectedSkills={activeSkills} onChange={setActiveSkills} />
 

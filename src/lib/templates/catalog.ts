@@ -10,6 +10,11 @@ export const TEMPLATE_CATALOG: TemplateMeta[] = [
     cover_url: '/templates/local/ledger/cover.png',
     tags: ['记账', '财务', '统计'],
     compatibleSkills: ['chart', 'export_excel', 'budget_alert'],
+    starterPrompts: [
+      '帮我添加一个支出分类功能，支持餐饮、交通、购物等类别',
+      '给每个分类加上预算上限，超支时自动标红提醒',
+      '增加月度统计图表，用柱状图展示每月收支趋势',
+    ],
     origin: { type: 'builtin' },
   },
   {
@@ -21,6 +26,11 @@ export const TEMPLATE_CATALOG: TemplateMeta[] = [
     cover_url: '/templates/local/todo/cover.png',
     tags: ['待办', '任务', '提醒'],
     compatibleSkills: ['export_excel'],
+    starterPrompts: [
+      '给任务增加优先级标签：高、中、低，按优先级排序',
+      '添加到期日期提醒，逾期任务自动标红',
+      '帮我做一个番茄钟计时器，每25分钟提醒休息',
+    ],
     origin: { type: 'builtin' },
   },
   {
@@ -32,6 +42,11 @@ export const TEMPLATE_CATALOG: TemplateMeta[] = [
     cover_url: '/templates/local/checkin/cover.png',
     tags: ['打卡', '习惯', '日历'],
     compatibleSkills: ['chart', 'export_excel'],
+    starterPrompts: [
+      '增加每日打卡提醒，到晚上没打卡就发通知',
+      '添加月度统计，用折线图展示本月打卡趋势',
+      '帮我设计积分奖励系统，连续打卡7天获得勋章',
+    ],
     origin: { type: 'builtin' },
   },
   {
@@ -43,6 +58,11 @@ export const TEMPLATE_CATALOG: TemplateMeta[] = [
     cover_url: '/templates/local/personal-portfolio/cover.png',
     tags: ['作品集', '个人主页', '展示'],
     compatibleSkills: [],
+    starterPrompts: [
+      '帮我增加一个项目展示区，每个项目带图片和描述',
+      '添加深色模式切换按钮',
+      '增加联系表单，访客可以给我留言',
+    ],
     origin: {
       type: 'open-source',
       repo: 'https://github.com/tailwindlabs/tailwindcss-showcase',
@@ -59,6 +79,11 @@ export const TEMPLATE_CATALOG: TemplateMeta[] = [
     cover_url: '/templates/local/product-landing/cover.png',
     tags: ['落地页', '产品', '营销'],
     compatibleSkills: [],
+    starterPrompts: [
+      '增加一个 FAQ 折叠区，回答常见问题',
+      '添加客户评价轮播组件',
+      '帮我优化移动端响应式布局',
+    ],
     origin: {
       type: 'open-source',
       repo: 'https://github.com/tailwindlabs/tailwindcss-showcase',
@@ -75,6 +100,11 @@ export const TEMPLATE_CATALOG: TemplateMeta[] = [
     cover_url: '/templates/local/restaurant-menu/cover.png',
     tags: ['菜单', '餐厅', '美食'],
     compatibleSkills: [],
+    starterPrompts: [
+      '添加菜品搜索功能，按名称或类别筛选',
+      '增加购物车功能，客人可以选菜下单',
+      '帮我设计套餐搭配推荐区',
+    ],
     origin: {
       type: 'open-source',
       repo: 'https://github.com/tailwindlabs/tailwindcss-showcase',
@@ -91,6 +121,11 @@ export const TEMPLATE_CATALOG: TemplateMeta[] = [
     cover_url: '/templates/local/reading-notes/cover.png',
     tags: ['阅读', '笔记', '书单'],
     compatibleSkills: [],
+    starterPrompts: [
+      '帮我增加阅读进度追踪功能',
+      '添加标记功能，分"想读/在读/读完"',
+      '增加导出读书笔记为 PDF 的功能',
+    ],
     origin: {
       type: 'open-source',
       repo: 'https://github.com/tailwindlabs/tailwindcss-showcase',
@@ -107,6 +142,11 @@ export const TEMPLATE_CATALOG: TemplateMeta[] = [
     cover_url: '/templates/local/resume-page/cover.png',
     tags: ['简历', '求职', '个人'],
     compatibleSkills: [],
+    starterPrompts: [
+      '帮我增加作品集链接区，放 GitHub 和项目链接',
+      '添加技能熟练度可视化条',
+      '增加"下载为 PDF"按钮，方便投递',
+    ],
     origin: {
       type: 'open-source',
       repo: 'https://github.com/tailwindlabs/tailwindcss-showcase',
@@ -123,6 +163,11 @@ export const TEMPLATE_CATALOG: TemplateMeta[] = [
     cover_url: '/templates/local/content-calendar/cover.png',
     tags: ['日历', '规划', '内容'],
     compatibleSkills: [],
+    starterPrompts: [
+      '添加内容分类筛选：图文/视频/直播',
+      '帮我增加发布状态跟踪：待发布/已发布',
+      '添加一键复制文案的功能',
+    ],
     origin: {
       type: 'open-source',
       repo: 'https://github.com/tailwindlabs/tailwindcss-showcase',
@@ -139,6 +184,11 @@ export const TEMPLATE_CATALOG: TemplateMeta[] = [
     cover_url: '',
     tags: ['空白', '自定义'],
     compatibleSkills: [],
+    starterPrompts: [
+      '帮我做一个个人记账工具，支持收入和支出记录',
+      '想做一个简单的倒计时页面，可以设置多个倒计时',
+      '帮我做一个随机决策轮盘，输入选项后随机选一个',
+    ],
     origin: { type: 'builtin' },
   },
 ];

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 
-export async function GET(
+export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ projectId: string }> }
 ) {
@@ -12,7 +12,13 @@ export async function GET(
   }
 
   const { projectId } = await params;
+  const body = await req.json() as { versionId?: string; name?: string };
 
+  if (!body.versionId) {
+    return NextResponse.json({ error: 'versionId 是必填参数' }, { status: 400 });
+  }
+
+  // Verify ownership
   const { data: project } = await db
     .from('projects')
     .select('id')
@@ -24,24 +30,28 @@ export async function GET(
     return NextResponse.json({ error: '项目不存在' }, { status: 404 });
   }
 
-  const kind = req.nextUrl.searchParams.get('kind');
-
-  let query = db
+  // Clear existing checkpoints and set new one
+  const { error: clearError } = await db
     .from('versions')
-    .select('id, message, summary, kind, is_checkpoint, parent_version_id, created_at')
+    .update({ is_checkpoint: false })
     .eq('project_id', projectId);
 
-  if (kind) {
-    query = query.eq('kind', kind);
+  if (clearError) {
+    return NextResponse.json({ error: clearError.message }, { status: 500 });
   }
 
-  const { data, error } = await query
-    .order('created_at', { ascending: false })
-    .limit(100);
+  const updates: Record<string, unknown> = { is_checkpoint: true };
+  if (body.name) updates.message = body.name;
+
+  const { error } = await db
+    .from('versions')
+    .update(updates)
+    .eq('id', body.versionId)
+    .eq('project_id', projectId);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json(data);
+  return NextResponse.json({ success: true });
 }

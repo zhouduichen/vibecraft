@@ -5,7 +5,7 @@ import { SLOT_BRIDGE_SCRIPT } from '@/lib/ai/slot-bridge';
 
 interface PreviewPaneProps {
   code: string;
-  onRenderError: () => void;
+  onRenderError: (errorMessage?: string) => void;
   onRenderReady?: () => void;
   isStreaming: boolean;
 }
@@ -27,9 +27,11 @@ export default function PreviewPane({ code, onRenderError, onRenderReady, isStre
     setHasError(false);
     setErrorDetail('');
     const spyScript = `<script>window.onerror=function(m,s,l,c,e){var msg=m||'';if(e&&e.stack)msg+='\\n'+String(e.stack).split('\\n').slice(0,3).join('\\n');window.parent.postMessage({type:'RENDER_ERROR',message:msg,source:s||'',line:l||0},'*');return false;};</script>`;
-    const enhanced = code
-      .replace(/<head\b[^>]*>/i, `$&${STORAGE_SHIM}${spyScript}`)
-      .replace('</head>', `${SLOT_BRIDGE_SCRIPT}</head>`);
+    const withHeadScripts = code
+      .replace(/<head\b[^>]*>/i, `$&${STORAGE_SHIM}${spyScript}`);
+    const enhanced = /<\/head>/i.test(withHeadScripts)
+      ? withHeadScripts.replace(/<\/head>/i, `${SLOT_BRIDGE_SCRIPT}</head>`)
+      : `${SLOT_BRIDGE_SCRIPT}${withHeadScripts}`;
     iframeRef.current.srcdoc = enhanced;
   }, [code]);
 
@@ -40,9 +42,9 @@ export default function PreviewPane({ code, onRenderError, onRenderReady, isStre
         errorFlagRef.current = true;
         setHasError(true);
         setErrorDetail(event.data.message || '未知错误');
-        onRenderErrorRef.current();
+        onRenderErrorRef.current(event.data.message || '');
       }
-      if (event.data?.type === 'RENDER_READY') {
+      if (event.data?.type === 'RENDER_READY' || event.data?.type === 'VIBECRAFT_READY') {
         onRenderReadyRef.current?.();
       }
     };

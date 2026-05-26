@@ -7,6 +7,7 @@ export interface TemplateMeta {
   cover_url: string;
   tags: string[];
   compatibleSkills: string[];
+  starterPrompts?: string[];
   origin?: {
     type: 'builtin' | 'open-source';
     repo?: string;

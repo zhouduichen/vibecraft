@@ -58,6 +58,23 @@ export async function PUT(
       }
       updates.design_profile = body.design_profile;
     }
+    if (body.description !== undefined) {
+      updates.description = asTrimmedString(body.description, 'description', 0, 500);
+    }
+    if (body.pinned !== undefined) {
+      updates.pinned = Boolean(body.pinned);
+    }
+    if (body.status !== undefined) {
+      if (!['active', 'archived'].includes(String(body.status))) {
+        return NextResponse.json(validationError('status 必须是 active 或 archived'), { status: 400 });
+      }
+      updates.status = body.status;
+      if (body.status === 'archived') {
+        updates.archived_at = new Date().toISOString();
+      } else {
+        updates.archived_at = null;
+      }
+    }
   } catch (err) {
     return NextResponse.json(validationError(err instanceof Error ? err.message : 'Invalid request'), { status: 400 });
   }

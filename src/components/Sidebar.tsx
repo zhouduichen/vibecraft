@@ -16,14 +16,21 @@ export default function Sidebar() {
   const [projects, setProjects] = useState<Project[]>([]);
 
   useEffect(() => {
-    if (!session?.user) {
-      setProjects([]);
-      return;
-    }
-    fetch('/api/projects')
-      .then(res => res.json())
-      .then(data => { if (Array.isArray(data)) setProjects(data); })
-      .catch(() => {});
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      if (!session?.user) {
+        setProjects([]);
+        return;
+      }
+      fetch('/api/projects')
+        .then(res => res.json())
+        .then(data => { if (!cancelled && Array.isArray(data)) setProjects(data); })
+        .catch(() => {});
+    }, 0);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
   }, [session?.user, pathname]);
 
   const navigate = (to: string) => {
@@ -121,6 +128,16 @@ export default function Sidebar() {
       )}
 
       {navButton(
+        () => navigate('/projects'),
+        isActive('/projects'),
+        '我的作品',
+        <svg className={iconCls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+        </svg>,
+        expanded
+      )}
+
+      {navButton(
         () => {},
         false,
         '搜索',
@@ -146,7 +163,10 @@ export default function Sidebar() {
 
       {expanded && (
         <div className="mt-4 flex flex-col min-h-0 flex-1">
-          <div className="mb-2 px-3 text-[11px] font-medium shrink-0" style={{ color: 'var(--sidebar-muted)' }}>最近项目</div>
+          <button onClick={() => navigate('/projects')} className="mb-2 px-3 text-[11px] font-medium shrink-0 flex items-center gap-1 hover:opacity-70 transition-opacity" style={{ color: 'var(--sidebar-muted)' }}>
+            最近项目
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
           {projects.length === 0 ? (
             <div className="px-3 text-[12px] leading-relaxed" style={{ color: 'var(--sidebar-muted)' }}>从模板或新建入口开始创作。</div>
           ) : (

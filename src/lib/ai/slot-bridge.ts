@@ -35,6 +35,7 @@ export const SLOT_BRIDGE_SCRIPT = `
 
   // Send ready + slots on load
   window.addEventListener('load', function() {
+    window.parent.postMessage({ type: 'RENDER_READY' }, '*');
     window.parent.postMessage({ type: 'VIBECRAFT_READY' }, '*');
     setTimeout(sendSlots, 100);
   });

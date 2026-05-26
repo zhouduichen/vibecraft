@@ -9,8 +9,7 @@ export function extractGeneratedHtml(response: string): string | null {
   if (start < 0) return null;
 
   const sliced = candidate.slice(start).trim();
-  if (!/<\/html>\s*$/i.test(sliced)) return null;
-  if (!/<script[^>]+type=["']text\/babel["']/i.test(sliced)) return null;
-  if (sliced.length < 500 || sliced.length > 500000) return null;
+  if (!/<script[^>]+type=["'](text\/babel|text\/javascript|module)["']/i.test(sliced)) return null;
+  if (sliced.length < 300 || sliced.length > 500000) return null;
   return sliced;
 }

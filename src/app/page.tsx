@@ -4,8 +4,10 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import BreathingGlow from '@/components/BreathingGlow';
 import PillParticleShell from '@/components/PillParticleShell';
+import ProjectCard from '@/components/ProjectCard';
 import { useSidebar } from '@/hooks/useSidebar';
 import { useTheme } from '@/hooks/useTheme';
+import type { Project } from '@/lib/db';
 
 export default function Home() {
   const [input, setInput] = useState('');
@@ -14,8 +16,19 @@ export default function Home() {
   const inputRef = useRef<HTMLInputElement>(null);
   const { toggle } = useSidebar();
   const { theme, toggle: toggleTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
+  const [recentProjects, setRecentProjects] = useState<Project[]>([]);
+  const [projectsLoaded, setProjectsLoaded] = useState(false);
+
+  // Fetch recent projects
+  useEffect(() => {
+    fetch('/api/projects?status=active&with_publish_status=true')
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) setRecentProjects(data.slice(0, 6));
+      })
+      .catch(() => {})
+      .finally(() => setProjectsLoaded(true));
+  }, []);
 
   const handleCreate = async () => {
     if (loading || !input.trim()) return;
@@ -24,7 +37,7 @@ export default function Home() {
       const res = await fetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: input.trim() || '未命名项目', from_scratch: true }),
+        body: JSON.stringify({ name: input.trim(), description: input.trim(), from_scratch: true }),
       });
       const data = await res.json();
       if (data.id) router.push(`/project/${data.id}`);
@@ -60,35 +73,23 @@ export default function Home() {
         </button>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={toggleTheme}
-            className="w-9 h-9 flex items-center justify-center rounded-full transition-all duration-200 active:scale-95"
-            style={{
-              background: 'var(--btn-glass-bg)',
-              backdropFilter: 'blur(12px)',
-              WebkitBackdropFilter: 'blur(12px)',
-              color: 'var(--btn-glass-text)',
-            }}
-            aria-label="切换主题"
-            suppressHydrationWarning
-          >
-            <span suppressHydrationWarning>
-            {mounted ? (
-              theme === 'dark' ? (
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                  <circle cx="12" cy="12" r="5" />
-                  <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-                </svg>
-              ) : (
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                  <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
-                </svg>
-              )
-            ) : (
-              <svg width="17" height="17" viewBox="0 0 24 24" />
-            )}
-            </span>
-          </button>
+          {recentProjects.length > 0 && (
+            <button
+              onClick={() => router.push('/projects')}
+              className="h-8 px-3.5 flex items-center gap-1.5 rounded-full text-[13px] font-medium transition-all duration-200 active:scale-95"
+              style={{
+                background: 'var(--btn-glass-bg)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+                color: 'var(--btn-glass-text)',
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+              我的作品
+            </button>
+          )}
           <button
             onClick={() => router.push('/templates')}
             className="h-8 px-3.5 flex items-center gap-1.5 rounded-full text-[13px] font-medium transition-all duration-200 active:scale-95"
@@ -107,11 +108,36 @@ export default function Home() {
             </svg>
             模板
           </button>
+          <button
+            onClick={toggleTheme}
+            className="w-9 h-9 flex items-center justify-center rounded-full transition-all duration-200 active:scale-95"
+            style={{
+              background: 'var(--btn-glass-bg)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              color: 'var(--btn-glass-text)',
+            }}
+            aria-label="切换主题"
+            suppressHydrationWarning
+          >
+            <span suppressHydrationWarning>
+            {theme === 'dark' ? (
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                <circle cx="12" cy="12" r="5" />
+                <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+              </svg>
+            ) : (
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
+              </svg>
+            )}
+            </span>
+          </button>
         </div>
       </div>
 
-      {/* Center */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 -mt-16">
+      {/* Center - creation area */}
+      <div className="flex flex-col items-center justify-center px-6" style={{ paddingTop: recentProjects.length > 0 ? 'clamp(32px, 4vw, 48px)' : 'clamp(64px, 8vw, 96px)' }}>
         {/* Greeting */}
         <h1
           className="entrance-greet text-center leading-tight tracking-tight"
@@ -120,23 +146,11 @@ export default function Home() {
             fontWeight: 'var(--greeting-weight)',
             color: 'var(--greeting-color)',
             letterSpacing: '-0.02em',
-            marginBottom: 'clamp(32px, 5vw, 48px)',
+            marginBottom: 'clamp(24px, 3vw, 32px)',
           }}
         >
           想做点什么？
         </h1>
-        <p
-          className="text-center entrance-greet"
-          style={{
-            fontSize: 'clamp(13px, 2vw, 15px)',
-            color: 'var(--color-text-muted)',
-            marginTop: '-24px',
-            marginBottom: 'clamp(28px, 4vw, 40px)',
-            animationDelay: '60ms',
-          }}
-        >
-          描述你想要的，或者从模板开始
-        </p>
 
         {/* Pill input with particle shell */}
         <PillParticleShell className="entrance-input w-full flex justify-center">
@@ -179,6 +193,31 @@ export default function Home() {
           </div>
         </PillParticleShell>
       </div>
+
+      {/* Recent projects grid */}
+      {projectsLoaded && recentProjects.length > 0 && (
+        <div className="flex-1 overflow-y-auto scrollbar-thin px-5 pb-6" style={{ marginTop: 'clamp(32px, 5vw, 48px)' }}>
+          <div className="max-w-5xl mx-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-[14px] font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+                继续创作
+              </h2>
+              <button
+                onClick={() => router.push('/projects')}
+                className="text-[12px] font-medium transition-colors"
+                style={{ color: 'var(--color-accent)' }}
+              >
+                查看全部 →
+              </button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {recentProjects.map(p => (
+                <ProjectCard key={p.id} project={p} onUpdate={() => {}} />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

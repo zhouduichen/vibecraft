@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { randomBytes } from 'crypto';
-import { asUuid, validationError } from '@/lib/api/validation';
+import { asUuid, asTrimmedString, validationError } from '@/lib/api/validation';
 
 function publicAppUrl(origin: string, slug: string) {
   return `${origin}/app/${slug}`;
@@ -15,9 +15,22 @@ export async function POST(req: NextRequest) {
   }
 
   let projectId: string;
+  let title: string | undefined;
+  let description: string | undefined;
+  let coverUrl: string | undefined;
+  let visibility: string | undefined;
   try {
-    const body = await req.json() as { projectId?: unknown };
+    const body = await req.json() as { projectId?: unknown; title?: unknown; description?: unknown; cover_url?: unknown; visibility?: unknown };
     projectId = asUuid(body.projectId, 'projectId');
+    if (body.title !== undefined) title = asTrimmedString(body.title, 'title', 1, 255);
+    if (body.description !== undefined) description = asTrimmedString(body.description, 'description', 0, 500);
+    if (body.cover_url !== undefined) coverUrl = asTrimmedString(body.cover_url, 'cover_url', 0, 2000);
+    if (body.visibility !== undefined) {
+      if (!['public', 'unlisted'].includes(String(body.visibility))) {
+        return NextResponse.json(validationError('visibility 必须是 public 或 unlisted'), { status: 400 });
+      }
+      visibility = String(body.visibility);
+    }
   } catch (err) {
     return NextResponse.json(validationError(err instanceof Error ? err.message : 'Invalid request'), { status: 400 });
   }
@@ -42,9 +55,18 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
 
   if (existing) {
+    const updates: Record<string, unknown> = {
+      html_content: project.current_html,
+      updated_at: new Date().toISOString(),
+    };
+    if (title !== undefined) updates.title = title;
+    if (description !== undefined) updates.description = description;
+    if (coverUrl !== undefined) updates.cover_url = coverUrl;
+    if (visibility !== undefined) updates.visibility = visibility;
+
     const { error: updateError } = await db
       .from('published_apps')
-      .update({ html_content: project.current_html, updated_at: new Date().toISOString() })
+      .update(updates)
       .eq('project_id', projectId)
       .is('revoked_at', null);
 
@@ -56,18 +78,41 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ url, slug: existing.slug });
   }
 
+  // Track first_publish milestone via direct update
+  const { data: projectMeta } = await db
+    .from('projects')
+    .select('onboarding_state')
+    .eq('id', projectId)
+    .single();
+
+  if (projectMeta) {
+    const state = (projectMeta.onboarding_state as Record<string, boolean> | null) || {};
+    if (!state.first_publish) {
+      await db
+        .from('projects')
+        .update({ onboarding_state: { ...state, first_publish: true } })
+        .eq('id', projectId);
+    }
+  }
+
   // Create new published app with slug retry
   let slug: string;
   let insertError: { code?: string; message?: string } | null = null;
   for (let attempt = 0; attempt < 3; attempt++) {
     slug = randomBytes(8).toString('hex');
+    const insertPayload: Record<string, unknown> = {
+      project_id: projectId,
+      slug,
+      html_content: project.current_html,
+    };
+    if (title !== undefined) insertPayload.title = title;
+    if (description !== undefined) insertPayload.description = description;
+    if (coverUrl !== undefined) insertPayload.cover_url = coverUrl;
+    if (visibility !== undefined) insertPayload.visibility = visibility;
+
     const result = await db
       .from('published_apps')
-      .insert({
-        project_id: projectId,
-        slug,
-        html_content: project.current_html,
-      });
+      .insert(insertPayload);
     insertError = result.error;
     if (!insertError) {
       const url = publicAppUrl(req.nextUrl.origin, slug);
