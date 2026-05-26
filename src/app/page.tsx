@@ -206,7 +206,8 @@ export default function Home() {
           />
           {/* Dialog */}
           <div
-            className="relative w-full max-w-3xl max-h-[80vh] rounded-2xl flex flex-col overflow-hidden"
+            className="relative w-full max-w-3xl max-h-[80vh] rounded-2xl grid overflow-hidden"
+            style={{ gridTemplateRows: 'auto 1fr' }}
             style={{
               background: 'var(--sidebar-bg)',
               border: '1px solid var(--color-border)',

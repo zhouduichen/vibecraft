@@ -105,7 +105,6 @@ export default function ProjectCard({ project, onUpdate }: ProjectCardProps) {
             title={project.name}
             sandbox=""
             className="w-full h-full border-0 pointer-events-none select-none"
-            style={{ transform: 'scale(0.5)', transformOrigin: 'top left', width: '200%', height: '200%' }}
           />
         ) : (
           <span className="text-3xl select-none opacity-20">◻</span>
