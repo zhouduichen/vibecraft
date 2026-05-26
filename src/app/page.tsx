@@ -19,15 +19,19 @@ export default function Home() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  // Fetch projects when dialog opens
-  useEffect(() => {
-    if (!dialogOpen) return;
+  const fetchProjects = () => {
     fetch('/api/projects?status=active')
       .then(r => r.json())
       .then(data => {
         if (Array.isArray(data)) setProjects(data);
       })
       .catch(() => {});
+  };
+
+  // Fetch projects when dialog opens
+  useEffect(() => {
+    if (!dialogOpen) return;
+    fetchProjects();
   }, [dialogOpen]);
 
   const handleCreate = async () => {
@@ -234,7 +238,7 @@ export default function Home() {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {projects.map(p => (
-                    <ProjectCard key={p.id} project={p} onUpdate={() => {}} />
+                    <ProjectCard key={p.id} project={p} onUpdate={fetchProjects} />
                   ))}
                 </div>
               )}
