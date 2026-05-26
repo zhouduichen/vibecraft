@@ -42,41 +42,56 @@ export default function ProjectCard({ project, onUpdate }: ProjectCardProps) {
           router.push(`/project/${project.id}`);
           return;
         case 'duplicate': {
-          await fetch(`/api/projects/${project.id}/duplicate`, { method: 'POST' });
+          const r = await fetch(`/api/projects/${project.id}/duplicate`, { method: 'POST' });
+          if (!r.ok) { alert('复制失败'); return; }
           onUpdate();
           break;
         }
-        case 'togglePin':
-          await fetch(`/api/projects/${project.id}`, {
+        case 'togglePin': {
+          const r = await fetch(`/api/projects/${project.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ pinned: !project.pinned }),
           });
+          if (!r.ok) { alert('操作失败'); return; }
           onUpdate();
           break;
-        case 'archive':
-          await fetch(`/api/projects/${project.id}`, {
+        }
+        case 'archive': {
+          const r = await fetch(`/api/projects/${project.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: 'archived' }),
           });
+          if (!r.ok) { alert('归档失败'); return; }
           onUpdate();
           break;
-        case 'unarchive':
-          await fetch(`/api/projects/${project.id}`, {
+        }
+        case 'unarchive': {
+          const r = await fetch(`/api/projects/${project.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: 'active' }),
           });
+          if (!r.ok) { alert('恢复失败'); return; }
           onUpdate();
           break;
-        case 'delete':
+        }
+        case 'delete': {
           if (!confirm('确定要删除这个项目吗？此操作不可撤销。')) return;
-          await fetch(`/api/projects/${project.id}`, { method: 'DELETE' });
+          const r = await fetch(`/api/projects/${project.id}`, { method: 'DELETE' });
+          if (!r.ok) {
+            const err = await r.json().catch(() => ({}));
+            alert(err.error || '删除失败，请稍后重试');
+            return;
+          }
           onUpdate();
           break;
+        }
       }
-    } catch {} finally {
+    } catch {
+      alert('网络错误，请稍后重试');
+    } finally {
       setLoading(null);
     }
     setMenuOpen(false);
