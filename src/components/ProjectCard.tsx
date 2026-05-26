@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import type { Project } from '@/lib/db';
 
@@ -194,7 +195,7 @@ export default function ProjectCard({ project, onUpdate }: ProjectCardProps) {
                 <circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none" />
               </svg>
             </button>
-            {menuOpen && (
+            {menuOpen && createPortal(
               <div
                 className="fixed w-36 py-1 rounded-lg border shadow-lg"
                 style={{
@@ -202,7 +203,7 @@ export default function ProjectCard({ project, onUpdate }: ProjectCardProps) {
                   left: menuPos.left,
                   background: 'var(--color-surface)',
                   borderColor: 'var(--color-border)',
-                  zIndex: 100,
+                  zIndex: 9999,
                 }}
               >
                 {[
@@ -227,7 +228,8 @@ export default function ProjectCard({ project, onUpdate }: ProjectCardProps) {
                     {item.label}
                   </button>
                 ))}
-              </div>
+              </div>,
+              document.body
             )}
           </div>
         </div>
