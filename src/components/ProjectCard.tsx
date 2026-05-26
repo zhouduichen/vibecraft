@@ -99,6 +99,14 @@ export default function ProjectCard({ project, onUpdate }: ProjectCardProps) {
         {project.thumbnail_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={project.thumbnail_url} alt={project.name} className="w-full h-full object-cover" />
+        ) : project.current_html ? (
+          <iframe
+            srcDoc={project.current_html}
+            title={project.name}
+            sandbox=""
+            className="w-full h-full border-0 pointer-events-none select-none"
+            style={{ transform: 'scale(0.5)', transformOrigin: 'top left', width: '200%', height: '200%' }}
+          />
         ) : (
           <span className="text-3xl select-none opacity-20">◻</span>
         )}

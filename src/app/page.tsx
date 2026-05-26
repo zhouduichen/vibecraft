@@ -230,7 +230,7 @@ export default function Home() {
               </button>
             </div>
             {/* Body */}
-            <div className="flex-1 overflow-y-auto px-5 py-4">
+            <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4">
               {projects.length === 0 ? (
                 <p className="text-center text-[14px] py-12" style={{ color: 'var(--color-text-muted)' }}>
                   还没有作品，在输入框中描述你的想法开始创作
