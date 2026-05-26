@@ -137,7 +137,7 @@ export default function Home() {
       </div>
 
       {/* Center - creation area */}
-      <div className="flex flex-col items-center justify-center px-6" style={{ paddingTop: recentProjects.length > 0 ? 'clamp(32px, 4vw, 48px)' : 'clamp(64px, 8vw, 96px)' }}>
+      <div className="flex-1 flex flex-col items-center justify-center px-6">
         {/* Greeting */}
         <h1
           className="entrance-greet text-center leading-tight tracking-tight"
