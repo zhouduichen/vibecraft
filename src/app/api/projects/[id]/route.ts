@@ -104,14 +104,56 @@ export async function DELETE(
   }
 
   const { id } = await params;
-  const { error } = await db
+  const { data: project, error: findError } = await db
+    .from('projects')
+    .select('id')
+    .eq('id', id)
+    .eq('user_id', session.user.id)
+    .maybeSingle();
+
+  if (findError) {
+    return NextResponse.json({ error: findError.message }, { status: 500 });
+  }
+  if (!project) {
+    return NextResponse.json({ error: '项目不存在' }, { status: 404 });
+  }
+
+  const { error: publishedAppsError } = await db
+    .from('published_apps')
+    .delete()
+    .eq('project_id', id);
+
+  if (publishedAppsError) {
+    return NextResponse.json({ error: publishedAppsError.message }, { status: 500 });
+  }
+
+  const { error: versionsError } = await db
+    .from('versions')
+    .delete()
+    .eq('project_id', id);
+
+  if (versionsError) {
+    return NextResponse.json({ error: versionsError.message }, { status: 500 });
+  }
+
+  const { error: creditsError } = await db
+    .from('credit_transactions')
+    .update({ project_id: null })
+    .eq('project_id', id)
+    .eq('user_id', session.user.id);
+
+  if (creditsError) {
+    return NextResponse.json({ error: creditsError.message }, { status: 500 });
+  }
+
+  const { error: deleteError } = await db
     .from('projects')
     .delete()
     .eq('id', id)
     .eq('user_id', session.user.id);
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  if (deleteError) {
+    return NextResponse.json({ error: deleteError.message }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });

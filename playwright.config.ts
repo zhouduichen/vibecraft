@@ -14,7 +14,7 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   webServer: {
-    command: `node -e "process.env.PORT='${serverPort}'; process.env.HOSTNAME='${serverHostname}'; process.env.AUTH_URL='${baseURL}'; process.env.AUTH_SECRET='playwright-test-secret-playwright-test-secret'; process.env.E2E_AUTH_BYPASS='1'; require('./.next/standalone/server.js')"`,
+    command: `node -e "const fs=require('fs');fs.cpSync('.next/static','.next/standalone/.next/static',{recursive:true});fs.cpSync('public','.next/standalone/public',{recursive:true});process.env.PORT='${serverPort}'; process.env.HOSTNAME='${serverHostname}'; process.env.AUTH_URL='${baseURL}'; process.env.AUTH_SECRET='playwright-test-secret-playwright-test-secret'; process.env.E2E_AUTH_BYPASS='1'; require('./.next/standalone/server.js')"`,
     url: baseURL,
     reuseExistingServer: true,
     timeout: 120_000,

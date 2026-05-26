@@ -3,6 +3,10 @@ import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import type { Project } from '@/lib/db';
+import { STORAGE_SHIM } from '@/lib/generated/storage-shim';
+
+const PREVIEW_WIDTH = 1280;
+const PREVIEW_HEIGHT = 960;
 
 interface ProjectWithPublish extends Project {
   publish_status?: { published: boolean; is_outdated?: boolean };
@@ -17,22 +21,44 @@ export default function ProjectCard({ project, onUpdate }: ProjectCardProps) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
+  const [previewScale, setPreviewScale] = useState(0);
   const [renderedAt] = useState(() => Date.now());
   const menuRef = useRef<HTMLDivElement>(null);
+  const menuPortalRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
+  const thumbnailRef = useRef<HTMLDivElement>(null);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
 
   // Close menu on outside click
   useEffect(() => {
     if (!menuOpen) return;
     const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(target) &&
+        !menuPortalRef.current?.contains(target)
+      ) {
         setMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [menuOpen]);
+
+  useEffect(() => {
+    const el = thumbnailRef.current;
+    if (!el || !project.current_html || project.thumbnail_url) return;
+
+    const updateScale = () => {
+      setPreviewScale(el.clientWidth > 0 ? el.clientWidth / PREVIEW_WIDTH : 0);
+    };
+
+    updateScale();
+    const observer = new ResizeObserver(updateScale);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [project.current_html, project.thumbnail_url]);
 
   const handleAction = async (action: string) => {
     setLoading(action);
@@ -101,6 +127,14 @@ export default function ProjectCard({ project, onUpdate }: ProjectCardProps) {
     try { return project.template_id; } catch { return ''; }
   })();
 
+  const previewHtml = (() => {
+    if (!project.current_html) return '';
+    if (/<head\b[^>]*>/i.test(project.current_html)) {
+      return project.current_html.replace(/<head\b[^>]*>/i, `$&${STORAGE_SHIM}`);
+    }
+    return `${STORAGE_SHIM}${project.current_html}`;
+  })();
+
   const timeAgo = (dateStr: string) => {
     const diff = renderedAt - new Date(dateStr).getTime();
     const mins = Math.floor(diff / 60000);
@@ -126,20 +160,22 @@ export default function ProjectCard({ project, onUpdate }: ProjectCardProps) {
       onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border)'; }}
     >
       {/* Thumbnail */}
-      <div className="aspect-[4/3] relative overflow-hidden" style={{ background: 'var(--color-base)' }}>
+      <div ref={thumbnailRef} className="aspect-[4/3] relative overflow-hidden" style={{ background: 'var(--color-base)' }}>
         {project.thumbnail_url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={project.thumbnail_url} alt={project.name} className="w-full h-full object-cover" />
+          <img src={project.thumbnail_url} alt={project.name} className="w-full h-full object-contain" />
         ) : project.current_html ? (
           <iframe
-            srcDoc={project.current_html}
+            srcDoc={previewHtml}
             title={project.name}
-            sandbox=""
+            sandbox="allow-scripts"
+            scrolling="no"
             className="absolute top-0 left-0 border-0 pointer-events-none select-none"
             style={{
-              width: '300%',
-              height: '300%',
-              transform: 'scale(0.3334)',
+              width: PREVIEW_WIDTH,
+              height: PREVIEW_HEIGHT,
+              opacity: previewScale > 0 ? 1 : 0,
+              transform: `scale(${previewScale})`,
               transformOrigin: 'top left',
             }}
           />
@@ -212,6 +248,7 @@ export default function ProjectCard({ project, onUpdate }: ProjectCardProps) {
             </button>
             {menuOpen && createPortal(
               <div
+                ref={menuPortalRef}
                 className="fixed w-36 py-1 rounded-lg border shadow-lg"
                 style={{
                   top: menuPos.top,
@@ -231,7 +268,10 @@ export default function ProjectCard({ project, onUpdate }: ProjectCardProps) {
                 ].map(item => (
                   <button
                     key={item.key}
-                    onClick={() => handleAction(item.key)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAction(item.key);
+                    }}
                     disabled={loading === item.key}
                     className="w-full text-left px-3 py-1.5 text-[12px] transition-colors disabled:opacity-50"
                     style={{
