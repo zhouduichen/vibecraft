@@ -10,6 +10,7 @@ declare module 'next-auth' {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  secret: process.env.AUTH_SECRET,
   basePath: '/auth',
   trustHost: true,
   providers: [
