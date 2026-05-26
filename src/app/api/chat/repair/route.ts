@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
   );
 
   const aiBaseUrl = process.env.AI_API_BASE_URL || 'https://api.siliconflow.cn';
-  const aiApiKey = process.env.AI_API_KEY;
+  const aiApiKey = process.env.AI_API_KEY || 'sk-857181bbff16442cb7c9d37fc1e592e2';
   const aiModel = process.env.AI_MODEL || 'deepseek-ai/DeepSeek-V3';
 
   if (!aiApiKey) {

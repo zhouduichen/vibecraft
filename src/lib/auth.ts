@@ -15,8 +15,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
   providers: [
     GitHub({
-      clientId: process.env.AUTH_GITHUB_ID || '',
-      clientSecret: process.env.AUTH_GITHUB_SECRET || '',
+      clientId: process.env.AUTH_GITHUB_ID || 'Ov23li8Coq3iAdjXK8at',
+      clientSecret: process.env.AUTH_GITHUB_SECRET || '8f75525a36b0be750a8f7a031f9026c673299d6f',
     }),
   ],
   callbacks: {
