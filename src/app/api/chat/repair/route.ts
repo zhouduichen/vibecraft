@@ -4,7 +4,12 @@ import { db } from '@/lib/db';
 import { buildSystemPrompt, buildRepairPrompt } from '@/lib/prompt';
 import { extractGeneratedHtml } from '@/lib/ai/html';
 import { asTrimmedString, asUuid, validationError } from '@/lib/api/validation';
-import { runPipeline } from '@/lib/worker-bridge';
+import {
+  runPipeline,
+  WorkerHttpError,
+  WorkerSchemaError,
+  WorkerUnreachableError,
+} from '@/lib/worker-bridge';
 
 const MAX_RETRIES = 2;
 
@@ -79,18 +84,39 @@ export async function POST(req: NextRequest) {
 
   const aiModel = process.env.AI_MODEL || 'deepseek-ai/DeepSeek-V3';
 
-  const result = await runPipeline({
-    metadata: { project: projectId, config_version: '1.0.0', created_by: userId },
-    components: [{
-      id: 'repair-gen',
-      kind: 'text_model',
-      provider: 'openai',
-      model: aiModel,
-      system_prompt: systemPrompt,
-      prompt: repairPrompt,
-      temperature: 0.3,
-    }],
-  });
+  let result;
+  try {
+    result = await runPipeline({
+      metadata: { project: projectId, config_version: '1.0.0', created_by: userId },
+      components: [{
+        id: 'repair-gen',
+        kind: 'text_model',
+        provider: 'openai',
+        model: aiModel,
+        system_prompt: systemPrompt,
+        prompt: repairPrompt,
+        temperature: 0.3,
+      }],
+    });
+  } catch (err) {
+    if (err instanceof WorkerUnreachableError) {
+      return NextResponse.json({
+        error: '修复服务暂时不可用',
+        repairedCode: null,
+        attemptCount: attemptCount + 1,
+      }, { status: 503 });
+    }
+
+    if (err instanceof WorkerHttpError || err instanceof WorkerSchemaError) {
+      return NextResponse.json({
+        error: '修复服务暂时不可用',
+        repairedCode: null,
+        attemptCount: attemptCount + 1,
+      }, { status: 502 });
+    }
+
+    throw err;
+  }
 
   const repairOutput = result.context.results['repair-gen'];
   if (!repairOutput?.success) {

@@ -79,7 +79,7 @@ export class WorkerHttpError extends Error {
   constructor(
     public readonly status: number,
     public readonly body: string,
-    endpoint: string,
+    public readonly endpoint: string,
   ) {
     super(`Worker returned ${status}: ${body.slice(0, 300)}`);
     this.name = 'WorkerHttpError';
