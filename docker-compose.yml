@@ -1,8 +1,38 @@
 services:
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    ports:
+      - "9120:9120"
+    environment:
+      AI_API_KEY: ${AI_API_KEY:?AI_API_KEY is required}
+      AI_API_BASE_URL: ${AI_API_BASE_URL:-https://api.deepseek.com}
+      AI_MODEL: ${AI_MODEL:-deepseek-chat}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:9120/health')\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    volumes:
+      - worker_runs:/app/runs
+
   vibecraft:
-    build: .
+    build:
+      context: ./vibecraft
+      dockerfile: Dockerfile
     ports:
       - "3008:3000"
     env_file:
-      - .env.local
+      - ./vibecraft/.env.local
+    environment:
+      WORKER_URL: http://worker:9120
     restart: unless-stopped
+    depends_on:
+      worker:
+        condition: service_healthy
+
+volumes:
+  worker_runs:

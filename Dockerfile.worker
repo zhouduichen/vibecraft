@@ -1,0 +1,20 @@
+FROM python:3.11-alpine
+
+RUN pip install --no-cache-dir pydantic
+
+WORKDIR /app
+
+COPY core/ core/
+COPY workers/ workers/
+
+RUN mkdir -p /app/runs
+
+HEALTHCHECK \
+    --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:9120/health')"
+
+EXPOSE 9120
+
+ENV PYTHONUNBUFFERED=1
+
+CMD ["python", "-m", "workers.server", "--host", "0.0.0.0", "--port", "9120"]

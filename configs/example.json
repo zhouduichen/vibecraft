@@ -1,0 +1,61 @@
+{
+  "metadata": {
+    "project": "vibecraft-demo",
+    "config_version": "1.0.0",
+    "pipeline_version": "1.0.0",
+    "created_by": "demo",
+    "revision": 1
+  },
+  "assets": [
+    { "id": "bg", "path": "assets/bg.png", "required": true },
+    { "id": "overlay", "path": "assets/overlay.png", "required": false }
+  ],
+  "params": {
+    "seed": 42,
+    "width": 1024,
+    "height": 1024,
+    "steps": 30,
+    "guidance_scale": 7.5
+  },
+  "components": [
+    {
+      "id": "prompt-gen",
+      "kind": "text_model",
+      "enabled": true,
+      "depends_on": [],
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-20250514",
+      "prompt": "a serene zen garden with cherry blossoms",
+      "temperature": 0.8
+    },
+    {
+      "id": "img-gen",
+      "kind": "image_model",
+      "enabled": true,
+      "depends_on": ["prompt-gen"],
+      "provider": "diffusers",
+      "model": "stable-diffusion-xl",
+      "prompt_ref": "prompt-gen",
+      "negative_prompt": "blurry, low quality"
+    },
+    {
+      "id": "resize-step",
+      "kind": "resize",
+      "enabled": true,
+      "depends_on": ["img-gen"],
+      "input_asset": "img-gen",
+      "width": 512,
+      "height": 512,
+      "mode": "fit"
+    },
+    {
+      "id": "final-export",
+      "kind": "export",
+      "enabled": true,
+      "depends_on": ["resize-step"],
+      "target": "png",
+      "output_path": "output/final.png",
+      "quality": 95
+    }
+  ]
+}

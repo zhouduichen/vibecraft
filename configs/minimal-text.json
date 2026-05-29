@@ -1,0 +1,26 @@
+{
+  "metadata": {
+    "project": "text-model-test",
+    "config_version": "1.0.0",
+    "created_by": "test"
+  },
+  "components": [
+    {
+      "id": "hello-world",
+      "kind": "text_model",
+      "enabled": true,
+      "provider": "openai",
+      "model": "deepseek-chat",
+      "prompt": "Return only the exact phrase: Hello from pipeline operator.",
+      "temperature": 0.3
+    },
+    {
+      "id": "save-output",
+      "kind": "export",
+      "enabled": true,
+      "depends_on": ["hello-world"],
+      "target": "html",
+      "output_path": "output/test-output.txt"
+    }
+  ]
+}
