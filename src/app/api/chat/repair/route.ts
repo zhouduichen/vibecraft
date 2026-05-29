@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { buildSystemPrompt, buildRepairPrompt } from '@/lib/prompt';
 import { extractGeneratedHtml } from '@/lib/ai/html';
 import { asTrimmedString, asUuid, validationError } from '@/lib/api/validation';
+import { runPipeline } from '@/lib/worker-bridge';
 
 const MAX_RETRIES = 2;
 
@@ -76,36 +77,31 @@ export async function POST(req: NextRequest) {
     errorMessage
   );
 
-  const aiBaseUrl = process.env.AI_API_BASE_URL || 'https://api.siliconflow.cn';
-  const aiApiKey = process.env.AI_API_KEY || 'sk-857181bbff16442cb7c9d37fc1e592e2';
   const aiModel = process.env.AI_MODEL || 'deepseek-ai/DeepSeek-V3';
 
-  if (!aiApiKey) {
-    return NextResponse.json({ error: 'AI API key is not configured' }, { status: 500 });
-  }
-
-  const aiResponse = await fetch(`${aiBaseUrl}/v1/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${aiApiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
+  const result = await runPipeline({
+    metadata: { project: projectId, config_version: '1.0.0', created_by: userId },
+    components: [{
+      id: 'repair-gen',
+      kind: 'text_model',
+      provider: 'openai',
       model: aiModel,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: repairPrompt },
-      ],
-      max_tokens: 8192,
-    }),
+      system_prompt: systemPrompt,
+      prompt: repairPrompt,
+      temperature: 0.3,
+    }],
   });
 
-  if (!aiResponse.ok) {
-    return NextResponse.json({ error: 'AI 服务暂时不可用' }, { status: 502 });
+  const repairOutput = result.context.results['repair-gen'];
+  if (!repairOutput?.success) {
+    return NextResponse.json({
+      error: repairOutput?.error || 'AI 服务暂时不可用',
+      repairedCode: null,
+      attemptCount: attemptCount + 1,
+    }, { status: 502 });
   }
 
-  const aiData = await aiResponse.json() as { choices?: Array<{ message?: { content?: string } }> };
-  const content = aiData.choices?.[0]?.message?.content || '';
+  const content = (repairOutput.output.content as string) || '';
   const cleanCode = extractGeneratedHtml(content);
 
   if (!cleanCode) {
